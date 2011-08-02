@@ -28,8 +28,8 @@ download_dir = ""
 username = ""
 password = ""
 cache_file = "cache"
-cache_dir = "/.rsstorrent/"
-cache_dir_path = ""
+config_dir = "/.rsstorrent/"
+config_dir_path = ""
 cache_file_path = ""
 
 
@@ -64,7 +64,7 @@ def parse_config_values(valueType, values):
 def read_config_file():
     """ Open and parse the config file, save the words in a list. """
     # Open config file
-    with open("./rsstorrent.conf") as config_file:
+    with open(os.path.join(config_dir_path + "rsstorrent.conf")) as config_file:
         file_content = config_file.readlines()
         config_file.close()
         for input_line in file_content:
@@ -129,7 +129,7 @@ def update_list_from_feed(url):
 def process_download_list(inputList):
     """ Process the list of waiting downloads. """
     # Open cache to check if file has been downloaded
-    if not os.path.exists(cache_dir_path):
+    if not os.path.exists(cache_file_path):
         print("Can't find cache directory")
         return
 
@@ -170,15 +170,16 @@ def convert_keys_to_regexps():
 
 def main():
     """ Main function. """
-    global cache_dir_path
+    global config_dir
+    global config_dir_path
     global cache_file_path
     global time_interval
     global regexp_keys
     home_dir = os.path.expanduser('~')
-    cache_dir_path = os.path.join(home_dir + cache_dir)
-    cache_file_path = os.path.join(cache_dir_path + cache_file)
-    if not os.path.exists(cache_dir_path):
-        os.mkdir(cache_dir_path, 0o755)
+    config_dir_path = os.path.join(home_dir + config_dir)
+    cache_file_path = os.path.join(config_dir_path + cache_file)
+    if not os.path.exists(config_dir_path):
+        os.mkdir(config_dir_path, 0o755)
         file_handle = open(cache_file_path, "w")
         file_handle.close()
         print("Creating cache dir: " + cache_dir_path)
