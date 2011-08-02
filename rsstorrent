@@ -1,49 +1,86 @@
-#!/bin/bash
+#!/sbin/runscript
 #
 # chkconfig: 35 90 12
 # description: rsstorrent
 #
 
 # Get function from functions library
-. /etc/init.d/functions
+source /etc/init.d/functions.sh
+
+depend() {
+    need localmount net
+}
+
+# Setup variables
+NAME=rsstorrent
+PATH=./
+DAEMON=./$NAME
+PIDFILE=/var/run/$NAME.pid
+LOGFILE=/var/log/$NAME.log
+SCRIPTNAME=/etc/init.d/$NAME
+USER=peter
+
+# Check for an invalid user or one without a home directory
+eval USERHOME=~$USER
+if [ "${USERHOME#/}" = "${USERHOME}" ]; then
+    eerror "$NAME: The user '$USER' specified in $DEFAULT is invalid."
+    exit 1
+fi
+
+# Check if group is not specified and assign a proper group
+if [ -z $GROUP ]; then
+   GROUP="$USER"
+fi
+
+# Check config file
+checkconfig() {
+	local conf="~/.rsstorrent/$NAME.conf"
+
+	if [ -e "${conf}" ] ; then
+		if [ -n "$(find ~/rsstorrent -maxdepth 1 -name rsstorrent.conf -perm +0004)" ] ; then
+			eerror "${conf} must not be world-readable. Run e.g.:"
+			eerror "   chmod 640 ${conf}"
+			eerror "   chown root:rsstorrent ${conf}"
+			return 1
+		fi
+	else
+		eerror "~/.rsstorrent/rsstorrent.conf is needed to run $NAME"
+		eerror "There is a sample file included in the package"
+		return 1
+	fi
+}
 
 # Start the service
 start() {
-        initlog -c "echo -n Starting rsstorrent service: "
-        /path/to/rsstorrent &
+        checkconfig || return 1
+        ebegin "Starting $NAME service: "
         ### Create the lock file ###
-        touch /var/lock/subsys/rsstorrent
-        success $"rsstorrent server startup"
-        echo
-}
-
-# Restart the service rsstorrent
-stop() {
-        initlog -c "echo -n Stopping rsstorrent server: "
-        killproc rsstorrent
-        ### Now, delete the lock file ###
-        rm -f /var/lock/subsys/rsstorrent
-        echo
+        touch $PIDFILE
+        start-stop-daemon --start --quiet --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- || return 1
+        eend $?
 }
 
 ### main logic ###
-case "$1" in
-  start)
-        start
-        ;;
-  stop)
-        stop
-        ;;
-  status)
-        status rsstorrent
-        ;;
-  restart|reload|condrestart)
-        stop
-        start
-        ;;
-  *)
-        echo $"Usage: $0 {start|stop|restart|reload|status}"
-        exit 1
-esac
+# case "$1" in
+#   start)
+        #start
+        #;;
+  #stop)
+        #stop
+        #;;
+  #status)
+  #      status $DAEMON
+  #      ;;
+  #reload)
+        #do_reload
+        #;;
+  #restart|force-reload|condrestart)
+        #stop
+        #start
+        #;;
+#  *)
+ #       echo $"Usage: $0 {start|stop|restart|reload|status}"
+  #      exit 1
+#esac
 
-exit 0
+#exit 0
