@@ -21,6 +21,7 @@ import time
 import re
 
 feed_url = ""
+login_url = ""
 time_interval = 5.0
 keys = []
 regexp_keys = []
@@ -35,7 +36,11 @@ cache_file_path = ""
 
 def parse_config_values(valueType, values):
     """ Save config lines into variables. """
-    if valueType == "url":
+    if valueType == "login_url":
+        # Save url to check
+        global login_url
+        login_url = values[0]
+    if valueType == "rss_url":
         # Save url to check
         global feed_url
         feed_url = values[0]
@@ -64,6 +69,7 @@ def parse_config_values(valueType, values):
 def read_config_file():
     """ Open and parse the config file, save the words in a list. """
     # Open config file
+    print("Reading configuration file")
     with open(os.path.join(config_dir_path + "rsstorrent.conf")) as config_file:
         file_content = config_file.readlines()
         config_file.close()
@@ -78,7 +84,7 @@ def read_config_file():
                 value_split[2].strip().split())
 
 
-def site_login(url):
+def site_login(rss, login):
     """ Log in to url and save cookie """
     cookie_jar = cookielib.CookieJar()
 
@@ -87,8 +93,8 @@ def site_login(url):
     opener.addheaders.append(('User-agent',
         ('Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1)'
         'Gecko/20110524 Firefox/4.0.1') ))
-    opener.addheaders.append( ('Referer',
-        'http://www.torrentbytes.net/login.php?returnto=%2F') )
+#    opener.addheaders.append( ('Referer',
+#        'http://www.torrentbytes.net/login.php?returnto=%2F') )
     urllib2.install_opener( opener )
 
     # assuming the site expects 'user' and 'pass' as query params
@@ -97,13 +103,13 @@ def site_login(url):
 
     # perform login with params
     try:
-        file_handle = opener.open( 'http://www.torrentbytes.net/takelogin.php',
+        file_handle = opener.open( login,
                             login_query )
         file_handle.close()
     except urllib2.HTTPError, exception:
-        print "HTTP Error:", exception.code, url
+        print "HTTP Error:", exception.code, rss
     except urllib2.URLError, exception:
-        print "URL Error:", exception.reason, url
+        print "URL Error:", exception.reason, rss
 
 
 def update_list_from_feed(url):
@@ -119,7 +125,6 @@ def update_list_from_feed(url):
     # Loop through that list
     for key in regexp_keys:
         for item in feed["items"]:
-            # if key.lower() in item["title"].lower():
             if key.search(item["title"]):
                 print(item["title"] + " : " + item["link"])
                 foundItems.append(item["link"])
@@ -162,10 +167,10 @@ def process_download_list(inputList):
 
 
 def convert_keys_to_regexps():
+    print("Searching for: ")
     print(keys)
     for key in keys:
         regexp_keys.append(re.compile(key, re.IGNORECASE))
-    print(regexp_keys)
 
 
 def main():
@@ -189,7 +194,7 @@ def main():
     if not os.path.exists(download_dir):
         os.mkdir(download_dir, 0o755)
     convert_keys_to_regexps()
-    site_login(feed_url)
+    site_login(feed_url, login_url)
 
     # Main loop
     #while (True):
@@ -204,6 +209,7 @@ def main():
         print("Cache file: " + cache_file)
         print("Cache file path: " + cache_file_path)
         print(feed_url)
+        print(login_url)
         print(keys)
         print(download_dir)
 
