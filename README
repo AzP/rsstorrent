@@ -1,0 +1,14 @@
+I kinda need to add something here. Basically:
+
+1. Download the files into a directory
+2. Change the rsstorrent.py to be runnable (chmod +x rsstorrent.py or right-click it, choose properties and fix it there)
+3. Edit the config file. I think the comments are pretty self-explanatory.
+3.1 Set an RSS-feed to monitor
+3.2 Set the directory to which you want to download your files
+3.3 Add search patterns in a basic regular expression form. ".*" (without the quotes) is the wildcard to use. "." means any character and "*" means 0 or more occurrences of it.
+3.4 Set your username and password to the torrent site, this is used to download the actual files.
+
+Then start the script by doing
+./rsstorrent.py
+
+and after that you should be up'n'running. Over and out!
