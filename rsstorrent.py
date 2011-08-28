@@ -13,12 +13,14 @@ __email__ = "peterasplund@gentoo.se"
 __status__ = "Prototype"
 
 import os
+import daemon
 import feedparser
 import urllib
 import urllib2
 import cookielib
 import time
 import re
+import logging
 
 feed_url = ""
 login_url = ""
@@ -69,7 +71,7 @@ def parse_config_values(valueType, values):
 def read_config_file():
     """ Open and parse the config file, save the words in a list. """
     # Open config file
-    print("Reading configuration file")
+    logging.info("Reading configuration file")
     with open(os.path.join(config_dir_path + "rsstorrent.conf")) as config_file:
         file_content = config_file.readlines()
         config_file.close()
@@ -107,9 +109,9 @@ def site_login(rss, login):
                             login_query )
         file_handle.close()
     except urllib2.HTTPError, exception:
-        print "HTTP Error:", exception.code, rss
+        logging.error("HTTP Error:", exception.code, rss)
     except urllib2.URLError, exception:
-        print "URL Error:", exception.reason, rss
+        logging.error("URL Error:", exception.reason, rss)
 
 
 def update_list_from_feed(url):
@@ -117,16 +119,16 @@ def update_list_from_feed(url):
     # Get feed
     feed = feedparser.parse(url)
     if feed.has_key('feed') == False:
-        print("{0} Error connecting to feed".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+        logging.error("{0} Error connecting to feed".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     else:
-        print("{0} Updating Feed: {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), feed['feed'].title))
+        logging.info("{0} Updating Feed: {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), feed['feed'].title))
 
     foundItems = []
     # Loop through that list
     for key in regexp_keys:
         for item in feed["items"]:
             if key.search(item["title"]):
-                print(item["title"] + " : " + item["link"])
+                logging.info(item["title"] + " : " + item["link"])
                 foundItems.append(item["link"])
     return foundItems
 
@@ -135,7 +137,7 @@ def process_download_list(inputList):
     """ Process the list of waiting downloads. """
     # Open cache to check if file has been downloaded
     if not os.path.exists(cache_file_path):
-        print("Can't find cache directory")
+        logging.info("Can't find cache directory")
         return
 
     # Open cache file and start downloading
@@ -146,18 +148,18 @@ def process_download_list(inputList):
             filename = input_line.partition("name=")[2]
 
             if filename in cached_files:
-                print("File already downloaded: " + input_line)
+                logging.info("File already downloaded: " + input_line)
                 continue
 
             filename = input_line.partition("name=")[2]
-            print("Downloading " + filename)
+            logging.info("Downloading " + filename)
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
-                print("HTTP Error:", exception.code, input_line)
+                logging.info("HTTP Error:", exception.code, input_line)
 
             if request.geturl() != input_line:
-                print("URL Redirect - Not allowed to download")
+                logging.info("URL Redirect - Not allowed to download")
                 continue
 
             with open(os.path.join(download_dir, filename), 'w') as local_file:
@@ -167,13 +169,13 @@ def process_download_list(inputList):
 
 
 def convert_keys_to_regexps():
-    print("Searching for: ")
-    print(keys)
+    logging.info("Searching for: ")
+    logging.info(keys)
     for key in keys:
         regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
-def main():
+def do_main_program():
     """ Main function. """
     global config_dir
     global config_dir_path
@@ -187,7 +189,7 @@ def main():
         os.mkdir(config_dir_path, 0o755)
         file_handle = open(cache_file_path, "w")
         file_handle.close()
-        print("Creating cache dir: " + cache_dir_path)
+        logging.info("Creating cache dir: " + cache_dir_path)
 
     read_config_file()
 
@@ -197,22 +199,25 @@ def main():
     site_login(feed_url, login_url)
 
     # Main loop
-    #while (True):
-    downloadList = update_list_from_feed(feed_url)
-    process_download_list(downloadList)
-    time.sleep(time_interval)
+    while (True):
+        downloadList = update_list_from_feed(feed_url)
+        process_download_list(downloadList)
+        time.sleep(time_interval)
 
     if 0:
-        print("Home dir: " + home_dir)
-        print("Cache dir: " + cache_dir)
-        print("Cache dir path: " + cache_dir_path)
-        print("Cache file: " + cache_file)
-        print("Cache file path: " + cache_file_path)
-        print(feed_url)
-        print(login_url)
-        print(keys)
-        print(download_dir)
-
+        logging.info("Home dir: " + home_dir)
+        logging.info("Cache dir: " + cache_dir)
+        logging.info("Cache dir path: " + cache_dir_path)
+        logging.info("Cache file: " + cache_file)
+        logging.info("Cache file path: " + cache_file_path)
+        logging.info(feed_url)
+        logging.info(login_url)
+        logging.info(keys)
+        logging.info(download_dir)
 
 if __name__ == "__main__":
-    main()
+    do_main_program()
+
+#with daemon.DaemonContext():
+#    do_main_program()
+
