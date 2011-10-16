@@ -1,82 +1,122 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset='utf-8'>
+<meta charset='utf-8'>
 
-  <title>AzP/rsstorrent @ GitHub</title>
+<title>AzP/rsstorrent @ GitHub</title>
 
-  <style type="text/css">
-    body {
-      margin-top: 1.0em;
-      background-color: #ccfaf1;
-      font-family: Helvetica, Arial, FreeSans, san-serif;
-      color: #000000;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-    h1 { font-size: 3.8em; color: #33050e; margin-bottom: 3px; }
-    h1 .small { font-size: 0.4em; }
-    h1 a { text-decoration: none }
-    h2 { font-size: 1.5em; color: #33050e; }
-    h3 { text-align: center; color: #33050e; }
-    a { color: #33050e; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-    pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-  </style>
+<style type="text/css">
+	body {
+	margin-top: 1.0em;
+	background-color: #ccfaf1;
+	font-family: Helvetica, Arial, FreeSans, san-serif;
+	color: #000000;
+	}
+	#container {
+	margin: 0 auto;
+	width: 700px;
+	}
+	h1 { font-size: 3.8em; color: #33050e; margin-bottom: 3px; }
+	h1 .small { font-size: 0.4em; }
+	h1 a { text-decoration: none }
+	h2 { font-size: 1.5em; color: #33050e; }
+	h3 { text-align: center; color: #33050e; }
+	a { color: #33050e; }
+	.description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+	.download { float: right; }
+	pre { background: #000; color: #fff; padding: 15px;}
+	hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+	.footer { text-align:center; padding-top:30px; font-style: italic; }
+</style>
 </head>
 
 <body>
-  <a href="http://github.com/AzP/rsstorrent"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+<a href="http://github.com/AzP/rsstorrent"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
 
-  <div id="container">
+<div id="container">
 
-    <div class="download">
-      <a href="http://github.com/AzP/rsstorrent/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/AzP/rsstorrent/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
+	<div class="download">
+	<a href="http://github.com/AzP/rsstorrent/zipball/master">
+		<img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+	<a href="http://github.com/AzP/rsstorrent/tarball/master">
+		<img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+	</div>
 
-    <h1><a href="http://github.com/AzP/rsstorrent">rsstorrent</a>
-      <span class="small">by <a href="http://github.com/AzP">AzP</a></span></h1>
+	<h1><a href="http://github.com/AzP/rsstorrent">rsstorrent</a>
+	<span class="small">by <a href="http://github.com/AzP">AzP</a></span></h1>
 
-    <div class="description">
-      Service to automatically download torrent files
-    </div>
+	<div class="description">
+		Service to automatically download torrent files
+	</div>
 
-    <h2>Dependencies</h2>
-<p>The following Python packages: daemon, feedparser</p>
-<h2>License</h2>
-<p>GPL v2</p>
-<h2>Authors</h2>
-<p>Peter Asplund (peter.azp@gmail.com)<br/>      </p>
-<h2>Contact</h2>
-<p>Peter Asplund (peter.azp@gmail.com)<br/>      </p>
+	<div class="information">
+		<p>I was lacking software that could automatically download torrent files based on a regular expression (or something like it) 
+		to my B3. The torrent download is great, but it kind of defeats the purpose for me, since I still had to log in to my 
+		torrentsite, download the torrent, and manually put it on the torrent-folder on the B3.</p>
+
+		<p>Therefore I wrote a small program in python that monitors an RSS-feed and downloads all torrent files that match the files 
+		you have stated that you would like to download. It works for me on the B3, but you have to start it using screen for now. 
+		The init-script does not work yet. But I'm working on it.</p>
+
+		<p>Hope somebody else finds this useful. If you do, please throw me a few comments about what to improve, etc. The things that 
+		has been taking most of my development time is actually deciding on how the script should behave, and how the user should 
+		be able to control/configure/use it.</p>
+		
+		<p>If you don't find it useful, please tell me why as well. Perhaps we can find space and time for adding some more features. 
+		But my idea is to keep it simple and have it do one thing pretty well.
+		I created a repository at gitHub, so either you clone it to your bubba (to easily get fixes and changes) using git, or you 
+		can just download the files manually from the page: https://github.com/AzP/rsstorrent</p>
+
+		<p>If you want to run it in a screen session, follow the tutorial at the Screen page. But the gist of it:</p>
+		
+		<div class="code">
+			1. Log-in using SSH
+			2. Run 'screen -S rsstorrent' (use whatever name you want for the session)
+			3. Start the script (./rsstorrent.py or python rsstorrent.py)
+			4. Press ctrl+A ctrl+D 
+		</div>
+	
+		<p>Now the session should be running in the background. Check it is by entering</p>
+		
+		<div class="code">
+			screen -ls
+		</div>
+		
+		<p>That should show the name of your session. Reconnect to it the next time you SSH into the box by running</p>
+		
+		<div class="code">
+			screen -r rsstorrent
+		</div>
+	</div>
+
+	<h2>Dependencies</h2>
+	<p>The following Python packages: daemon, feedparser</p>
+	<h2>License</h2>
+	<p>GPL v2</p>
+	<h2>Authors</h2>
+	<p>Peter Asplund (peter.azp@gmail.com)	<br/>      </p>
+	<h2>Contact</h2>
+	<p>Peter Asplund (peter.azp@gmail.com)	<br/>      </p>
 
 
-    <h2>Download</h2>
-    <p>
-      You can download this project in either
-      <a href="http://github.com/AzP/rsstorrent/zipball/master">zip</a> or
-      <a href="http://github.com/AzP/rsstorrent/tarball/master">tar</a> formats.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/AzP/rsstorrent</pre>
-    </p>
+	<h2>Download</h2>
+	<p>
+	You can download this project in either
+	<a href="http://github.com/AzP/rsstorrent/zipball/master">zip</a> or
+	<a href="http://github.com/AzP/rsstorrent/tarball/master">tar</a> formats.
+	</p>
+	<p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+	by running:
+	<pre>$ git clone git://github.com/AzP/rsstorrent</pre>
+	</p>
 
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/AzP/rsstorrent">AzP/rsstorrent</a>
-    </div>
+	<div class="footer">
+	get the source code on GitHub : <a href="http://github.com/AzP/rsstorrent">AzP/rsstorrent</a>
+	</div>
 
-  </div>
+</div>
 
-  <script type="text/javascript">
+<script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
 </script>
