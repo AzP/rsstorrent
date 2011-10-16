@@ -118,10 +118,10 @@ def update_list_from_feed(url):
     """ Update the feed data from its url. """
     # Get feed
     feed = feedparser.parse(url)
-    if feed.has_key('feed') == False:
+    if feed.feed.has_key('title') == False:
         logging.error("{0} Error connecting to feed".format(time.strftime("%Y-%m-%d %H:%M:%S")))
     else:
-        logging.info("{0} Updating Feed: {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), feed['feed'].title))
+        logging.info("{0} Updating Feed: {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), feed['feed']['title']))
 
     foundItems = []
     # Loop through that list
