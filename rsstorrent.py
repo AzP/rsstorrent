@@ -7,10 +7,10 @@ __author__ = "Peter Asplund"
 __copyright__ = "Copyright 2011"
 __credits__ = ["None"]
 __license__ = "GPL"
-__version__ = "0.1"
+__version__ = "0.2"
 __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
-__status__ = "Prototype"
+__status__ = "Beta"
 
 import os
 import daemon
@@ -21,6 +21,7 @@ import cookielib
 import time
 import re
 import logging
+from optparse import OptionParser
 
 feed_url = ""
 login_url = ""
@@ -66,7 +67,6 @@ def parse_config_values(valueType, values):
         # Save password to site
         global password
         password = values[0]
-
 
 def read_config_file():
     """ Open and parse the config file, save the words in a list. """
@@ -116,14 +116,16 @@ def site_login(rss, login):
 
 def update_list_from_feed(url):
     """ Update the feed data from its url. """
+    foundItems = []
+
     # Get feed
     feed = feedparser.parse(url)
-    if feed.feed.has_key('title') == False:
-        logging.error("{0} Error connecting to feed".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+    if 'title' not in feed.feed:
+        logging.error("Error connecting to feed")
+        return foundItems;
     else:
-        logging.info("{0} Updating Feed: {1}".format(time.strftime("%Y-%m-%d %H:%M:%S"), feed['feed']['title']))
+        logging.info("Updating Feed: " + feed['feed']['title'])
 
-    foundItems = []
     # Loop through that list
     for key in regexp_keys:
         for item in feed["items"]:
@@ -177,20 +179,38 @@ def convert_keys_to_regexps():
 
 def do_main_program():
     """ Main function. """
+    # Parse command line commands
+    parser = OptionParser()
+    parser.add_option("-v", "--verbose", action="store_false", dest="verbose",
+                    help="Print debug information to console", default=False)
+    parser.add_option("-l", "--logfile", dest="log_file",
+                    help="write log to FILE", metavar="FILE")
+    (options, args) = parser.parse_args()
+
     global config_dir
     global config_dir_path
     global cache_file_path
     global time_interval
     global regexp_keys
+    
     home_dir = os.path.expanduser('~')
-    config_dir_path = os.path.join(home_dir + config_dir)
+    cache_dir_path = config_dir_path = os.path.join(home_dir + config_dir)
     cache_file_path = os.path.join(config_dir_path + cache_file)
     if not os.path.exists(config_dir_path):
         os.mkdir(config_dir_path, 0o755)
         file_handle = open(cache_file_path, "w")
         file_handle.close()
-        logging.info("Creating cache dir: " + cache_dir_path)
 
+    # Setup logging to file
+    if not options.log_file:
+        log_file = os.path.join(config_dir_path + "rsstorrent.log")
+    formatting='%(asctime)s %(levelname)s: %(message)s'
+    if options.verbose:
+        logging.basicConfig(format=formatting, level=logging.DEBUG)
+    else:
+        logging.basicConfig(filename=options.log_file, format=formatting, level=logging.DEBUG)
+
+    # Read config file
     read_config_file()
 
     if not os.path.exists(download_dir):
@@ -201,19 +221,22 @@ def do_main_program():
     # Main loop
     while (True):
         downloadList = update_list_from_feed(feed_url)
-        process_download_list(downloadList)
+
+        if len(downloadList):
+            process_download_list(downloadList)
+
         time.sleep(time_interval)
 
     if 0:
-        logging.info("Home dir: " + home_dir)
-        logging.info("Cache dir: " + cache_dir)
-        logging.info("Cache dir path: " + cache_dir_path)
-        logging.info("Cache file: " + cache_file)
-        logging.info("Cache file path: " + cache_file_path)
-        logging.info(feed_url)
-        logging.info(login_url)
-        logging.info(keys)
-        logging.info(download_dir)
+        logging.debug("Home dir: " + home_dir)
+        logging.debug("Cache dir: " + cache_dir)
+        logging.debug("Cache dir path: " + cache_dir_path)
+        logging.debug("Cache file: " + cache_file)
+        logging.debug("Cache file path: " + cache_file_path)
+        logging.debug(feed_url)
+        logging.debug(login_url)
+        logging.debug(keys)
+        logging.debug(download_dir)
 
 if __name__ == "__main__":
     do_main_program()
