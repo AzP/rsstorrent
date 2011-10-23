@@ -21,6 +21,7 @@ import cookielib
 import time
 import re
 import logging
+import shutil
 from optparse import OptionParser
 
 feed_url = ""
@@ -32,6 +33,7 @@ download_dir = ""
 username = ""
 password = ""
 cache_file = "cache"
+config_file = "rsstorrent.conf"
 config_dir = "/.rsstorrent/"
 config_dir_path = ""
 cache_file_path = ""
@@ -68,13 +70,16 @@ def parse_config_values(valueType, values):
         global password
         password = values[0]
 
-def read_config_file():
+def read_config_file(config_file_path):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
     logging.info("Reading configuration file")
-    with open(os.path.join(config_dir_path + "rsstorrent.conf")) as config_file:
+    with open(config_file_path) as config_file:
         file_content = config_file.readlines()
         config_file.close()
+        if len(file_content) == 0:
+            return False
+
         for input_line in file_content:
             # If the line is a comment, skip it
             if input_line.startswith("#"):
@@ -84,6 +89,7 @@ def read_config_file():
             # Then feed setting and values into the parser
             parse_config_values(value_split[0].strip(),
                 value_split[2].strip().split())
+        return True
 
 
 def site_login(rss, login):
@@ -190,12 +196,14 @@ def do_main_program():
     global config_dir
     global config_dir_path
     global cache_file_path
+    global config_file_path
     global time_interval
     global regexp_keys
     
     home_dir = os.path.expanduser('~')
     cache_dir_path = config_dir_path = os.path.join(home_dir + config_dir)
     cache_file_path = os.path.join(config_dir_path + cache_file)
+    config_file_path = os.path.join(config_dir_path + config_file)
     if not os.path.exists(config_dir_path):
         os.mkdir(config_dir_path, 0o755)
         file_handle = open(cache_file_path, "w")
@@ -214,8 +222,13 @@ def do_main_program():
     else:
         logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
 
-    # Read config file
-    read_config_file()
+    # Read config file, if it can't find it, copy it from current folder
+    if not os.path.exists(config_file_path):
+        shutil.copy("rsstorrent.conf", config_dir_path);
+    config_success = read_config_file(config_file_path)
+    if not config_success:
+        logging.critical("Can't read config file")
+        exit(-1)
 
     if not os.path.exists(download_dir):
         os.mkdir(download_dir, 0o755)
