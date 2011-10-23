@@ -50,7 +50,7 @@ def parse_config_values(valueType, values):
     elif valueType == "interval":
         # Save time interval (in seconds) for checking feeds
         global time_interval
-        time_interval = float(values[0]) #* 60.0
+        time_interval = float(values[0]) * 60.0
     elif valueType == "download_dir":
         # Save name of directory to download files to
         global download_dir
