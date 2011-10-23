@@ -181,11 +181,14 @@ def do_main_program():
     """ Main function. """
     # Parse command line commands
     parser = OptionParser()
-    parser.add_option("-v", "--verbose", action="store_false", dest="verbose",
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
                     help="Print debug information to console", default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
                     help="write log to FILE", metavar="FILE")
     (options, args) = parser.parse_args()
+
+    print(options.verbose)
+    print(options.log_file)
 
     global config_dir
     global config_dir_path
@@ -202,13 +205,17 @@ def do_main_program():
         file_handle.close()
 
     # Setup logging to file
-    if not options.log_file:
+    if options.log_file:
+        log_file = options.log_file
+    else:
         log_file = os.path.join(config_dir_path + "rsstorrent.log")
+
     formatting='%(asctime)s %(levelname)s: %(message)s'
-    if options.verbose:
+    if (options.verbose):
+        print("Verbose mode")
         logging.basicConfig(format=formatting, level=logging.DEBUG)
     else:
-        logging.basicConfig(filename=options.log_file, format=formatting, level=logging.DEBUG)
+        logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
 
     # Read config file
     read_config_file()
