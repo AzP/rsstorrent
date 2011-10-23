@@ -187,9 +187,6 @@ def do_main_program():
                     help="write log to FILE", metavar="FILE")
     (options, args) = parser.parse_args()
 
-    print(options.verbose)
-    print(options.log_file)
-
     global config_dir
     global config_dir_path
     global cache_file_path
