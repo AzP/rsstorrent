@@ -22,77 +22,94 @@ import time
 import re
 import logging
 import shutil
+import ConfigParser
 from optparse import OptionParser
 
-feed_url = ""
-login_url = ""
-time_interval = 5.0
-keys = []
-regexp_keys = []
-download_dir = ""
-username = ""
-password = ""
-cache_file = "cache"
-config_file = "rsstorrent.conf"
-config_dir = "/.rsstorrent/"
-config_dir_path = ""
-cache_file_path = ""
+
+class Environment:
+    """ Keeps track of all files and directories """
+    # File names
+    cache_file = "cache"
+    config_file = "rsstorrent.conf"
+
+    # Directory names
+    home_dir = ""
+    config_dir = "/.rsstorrent/"
+    download_dir = ""
+
+    # Full paths
+    cache_dir_path = ""
+    cache_file_path = ""
+    config_file_path = ""
+    config_dir_path = ""
+
+    def __init__(self):
+        self.home_dir = os.path.expanduser('~')
+        self.cache_dir_path = os.path.join(self.home_dir + self.config_dir)
+        self.config_dir_path = os.path.join(self.home_dir + self.config_dir)
+        self.cache_file_path = os.path.join(self.config_dir_path +
+                                            self.cache_file)
+        self.config_file_path = os.path.join(self.config_dir_path +
+                                            self.config_file)
+        self.download_dir = os.path.join(self.home_dir + "/Download")
+        if not os.path.exists(self.config_dir_path):
+            os.mkdir(self.config_dir_path, 0o755)
+            file_handle = open(self.cache_file_path, "w")
+            file_handle.close()
+
+    def print_debug(self):
+        """ Dump all local variables """
+        logging.debug("Home dir: " + self.home_dir)
+        logging.debug("Cache dir path: " + self.cache_dir_path)
+        logging.debug("Cache file: " + self.cache_file)
+        logging.debug("Cache file path: " + self.cache_file_path)
+        logging.debug("Download dir path: " + self.download_dir)
+
+class Site:
+    """ Represents a monitored site """
+    feed_url = ""
+    login_url = ""
+    time_interval = 5.0
+    keys = []
+    regexp_keys = []
+    username = ""
+    password = ""
+
+    def print_debug(self):
+        """ Dump all local variables """
+        logging.debug("\nSite: ")
+        logging.debug(self.feed_url)
+        logging.debug(self.login_url)
+        logging.debug(self.keys)
 
 
-def parse_config_values(valueType, values):
-    """ Save config lines into variables. """
-    if valueType == "login_url":
-        # Save url to check
-        global login_url
-        login_url = values[0]
-    if valueType == "rss_url":
-        # Save url to check
-        global feed_url
-        feed_url = values[0]
-    elif valueType == "interval":
-        # Save time interval (in seconds) for checking feeds
-        global time_interval
-        time_interval = float(values[0]) * 60.0
-    elif valueType == "download_dir":
-        # Save name of directory to download files to
-        global download_dir
-        download_dir = values[0]
-    elif valueType == "keys":
-        # Save list of words to look for
-        global keys
-        keys = values
-    elif valueType == "username":
-        # Save username to site
-        global username
-        username = values[0]
-    elif valueType == "password":
-        # Save password to site
-        global password
-        password = values[0]
-
-def read_config_file(config_file_path):
+def read_config_file(cfg_file, sites, download_dir):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
     logging.info("Reading configuration file")
-    with open(config_file_path) as config_file:
-        file_content = config_file.readlines()
-        config_file.close()
-        if len(file_content) == 0:
-            return False
+    config = ConfigParser.SafeConfigParser()
+    config.read(cfg_file)
+    sections = config.sections()
+    # Save name of directory to download files to
+    download_dir = config.get(section, "download_dir")
+    for section in sections:
+        # Save url to check
+        sites.login_url = config.get(section, "login_url")
+        # Save url to check
+        sites.feed_url = config.get(section, "rss_url")
+        # Save time interval (in seconds) for checking feeds
+        sites.time_interval = config.getfloat(section, "interval") * 60.0
+        # Save list of words to look for
+        keys_str = config.get(section, "keys")
+        sites.keys = keys_str.split()
+        # Save username to site
+        sites.username = config.get(section, "username")
+        # Save password to site
+        sites.password = config.get(section, "password")
+    return True
 
-        for input_line in file_content:
-            # If the line is a comment, skip it
-            if input_line.startswith("#"):
-                continue
-            # Separate line into 'setting', '=' and 'values'
-            value_split = input_line.partition("=")
-            # Then feed setting and values into the parser
-            parse_config_values(value_split[0].strip(),
-                value_split[2].strip().split())
-        return True
 
-
-def site_login(rss, login):
+def site_login(site):
     """ Log in to url and save cookie """
     cookie_jar = cookielib.CookieJar()
 
@@ -101,34 +118,34 @@ def site_login(rss, login):
     opener.addheaders.append(('User-agent',
         ('Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1)'
         'Gecko/20110524 Firefox/4.0.1') ))
-#    opener.addheaders.append( ('Referer',
-#        'http://www.torrentbytes.net/login.php?returnto=%2F') )
     urllib2.install_opener( opener )
 
     # assuming the site expects 'user' and 'pass' as query params
-    login_query = urllib.urlencode( { 'username': username,
-        'password': password, 'login' : 'Log in!' } )
+    login_query = urllib.urlencode( { 'username': site.username,
+        'password': site.password, 'login' : 'Log in!' } )
 
     # perform login with params
     try:
-        file_handle = opener.open( login,
+        file_handle = opener.open( site.login_url,
                             login_query )
         file_handle.close()
     except urllib2.HTTPError, exception:
-        logging.error("HTTP Error:", exception.code, rss)
+        logging.error("HTTP Error: " + exception.code +
+                " Site:" + site.feed_url)
     except urllib2.URLError, exception:
-        logging.error("URL Error:", exception.reason, rss)
+        logging.error("URL Error: " + exception.reason +
+                " Site:" + site.feed_url)
 
 
-def update_list_from_feed(url):
+def update_list_from_feed(url, regexp_keys):
     """ Update the feed data from its url. """
-    foundItems = []
+    found_items = []
 
     # Get feed
     feed = feedparser.parse(url)
     if 'title' not in feed.feed:
         logging.error("Error connecting to feed")
-        return foundItems;
+        return found_items
     else:
         logging.info("Updating Feed: " + feed['feed']['title'])
 
@@ -137,22 +154,22 @@ def update_list_from_feed(url):
         for item in feed["items"]:
             if key.search(item["title"]):
                 logging.info(item["title"] + " : " + item["link"])
-                foundItems.append(item["link"])
-    return foundItems
+                found_items.append(item["link"])
+    return found_items
 
 
-def process_download_list(inputList):
+def process_download_list(cache, download_dir, input_list):
     """ Process the list of waiting downloads. """
     # Open cache to check if file has been downloaded
-    if not os.path.exists(cache_file_path):
+    if not os.path.exists(cache):
         logging.info("Can't find cache directory")
         return
 
     # Open cache file and start downloading
-    with open(cache_file_path, 'a+') as cache_file_handle:
+    with open(cache, 'a+') as cache_file_handle:
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
-        for input_line in inputList:
+        for input_line in input_list:
             filename = input_line.partition("name=")[2]
 
             if filename in cached_files:
@@ -164,7 +181,8 @@ def process_download_list(inputList):
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
-                logging.info("HTTP Error:", exception.code, input_line)
+                msg = "HTTP Error: " + exception.code + " Line:" + input_line
+                logging.info(msg)
 
             if request.geturl() != input_line:
                 logging.info("URL Redirect - Not allowed to download")
@@ -176,11 +194,13 @@ def process_download_list(inputList):
             cache_file_handle.writelines(filename + "\n")
 
 
-def convert_keys_to_regexps():
+def convert_keys_to_regexps(site):
+    """ Process the list of keys and convert
+        to compiled regular expressions. """
     logging.info("Searching for: ")
-    logging.info(keys)
-    for key in keys:
-        regexp_keys.append(re.compile(key, re.IGNORECASE))
+    logging.info(site.keys)
+    for key in site.keys:
+        site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
 def do_main_program():
@@ -193,71 +213,60 @@ def do_main_program():
                     help="write log to FILE", metavar="FILE")
     (options, args) = parser.parse_args()
 
-    global config_dir
-    global config_dir_path
-    global cache_file_path
-    global config_file_path
-    global time_interval
-    global regexp_keys
-    
-    home_dir = os.path.expanduser('~')
-    cache_dir_path = config_dir_path = os.path.join(home_dir + config_dir)
-    cache_file_path = os.path.join(config_dir_path + cache_file)
-    config_file_path = os.path.join(config_dir_path + config_file)
-    if not os.path.exists(config_dir_path):
-        os.mkdir(config_dir_path, 0o755)
-        file_handle = open(cache_file_path, "w")
-        file_handle.close()
+    if args:
+        logging.warning("Required variables not supplied")
+
+    env = Environment()
 
     # Setup logging to file
     if options.log_file:
         log_file = options.log_file
     else:
-        log_file = os.path.join(config_dir_path + "rsstorrent.log")
+        log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
 
-    formatting='%(asctime)s %(levelname)s: %(message)s'
+    formatting = '%(asctime)s %(levelname)s: %(message)s'
     if (options.verbose):
         print("Verbose mode")
         logging.basicConfig(format=formatting, level=logging.DEBUG)
     else:
-        logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
+        logging.basicConfig(filename=log_file,
+                format=formatting,
+                level=logging.DEBUG)
 
     # Read config file, if it can't find it, copy it from current folder
-    if not os.path.exists(config_file_path):
-        shutil.copy("rsstorrent.conf", config_dir_path);
-    config_success = read_config_file(config_file_path)
+    if not os.path.exists(env.config_file_path):
+        shutil.copy("rsstorrent.conf", env.config_dir_path)
+
+    sites = Site()
+    config_success = read_config_file(env.config_file_path,
+                                    sites, env.download_dir)
     if not config_success:
         logging.critical("Can't read config file")
         exit(-1)
 
-    if not os.path.exists(download_dir):
-        os.mkdir(download_dir, 0o755)
-    convert_keys_to_regexps()
-    site_login(feed_url, login_url)
+    if not os.path.exists(env.download_dir):
+        os.mkdir(env.download_dir, 0o755)
+    convert_keys_to_regexps(sites)
+    site_login(sites)
 
     # Main loop
     while (True):
-        downloadList = update_list_from_feed(feed_url)
+        download_list = update_list_from_feed(sites.feed_url, sites.regexp_keys)
 
-        if len(downloadList):
-            process_download_list(downloadList)
+        if len(download_list):
+            process_download_list(env.cache_file_path,
+                    env.download_dir, download_list)
 
-        time.sleep(time_interval)
+        time.sleep(sites.time_interval)
 
     if 0:
-        logging.debug("Home dir: " + home_dir)
-        logging.debug("Cache dir: " + cache_dir)
-        logging.debug("Cache dir path: " + cache_dir_path)
-        logging.debug("Cache file: " + cache_file)
-        logging.debug("Cache file path: " + cache_file_path)
-        logging.debug(feed_url)
-        logging.debug(login_url)
-        logging.debug(keys)
-        logging.debug(download_dir)
+        env.print_debug()
+        for site in sites:
+            site.print_debug()
 
 if __name__ == "__main__":
     do_main_program()
 
-#with daemon.DaemonContext():
-#    do_main_program()
+with daemon.DaemonContext():
+    do_main_program()
 
