@@ -83,7 +83,7 @@ class Site:
         logging.debug(self.keys)
 
 
-def read_config_file(cfg_file, sites, download_dir):
+def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
     logging.info("Reading configuration file")
@@ -91,23 +91,23 @@ def read_config_file(cfg_file, sites, download_dir):
     config.read(cfg_file)
     sections = config.sections()
     for section in sections:
-		if section == "General":
-			# Save name of directory to download files to
-		    download_dir = config.get(section, "download_dir")
-		else:
-			# Save url to check
-			sites.login_url = config.get(section, "login_url")
-			# Save url to check
-			sites.feed_url = config.get(section, "rss_url")
-			# Save time interval (in seconds) for checking feeds
-			sites.time_interval = config.getfloat(section, "interval") * 60.0
-			# Save list of words to look for
-			keys_str = config.get(section, "keys")
-			sites.keys = keys_str.split()
-			# Save username to site
-			sites.username = config.get(section, "username")
-			# Save password to site
-			sites.password = config.get(section, "password")
+        if section == "General":
+            # Save name of directory to download files to
+            env.download_dir = config.get(section, "download_dir")
+        else:
+            # Save url to check
+            sites.login_url = config.get(section, "login_url")
+            # Save url to check
+            sites.feed_url = config.get(section, "rss_url")
+            # Save time interval (in seconds) for checking feeds
+            sites.time_interval = config.getfloat(section, "interval") * 60.0
+            # Save list of words to look for
+            keys_str = str(config.get(section, "keys"))
+            sites.keys = keys_str.split()
+            # Save username to site
+            sites.username = config.get(section, "username")
+            # Save password to site
+            sites.password = config.get(section, "password")
     return True
 
 
@@ -241,7 +241,7 @@ def do_main_program():
 
     sites = Site()
     config_success = read_config_file(env.config_file_path,
-                                    sites, env.download_dir)
+                                    sites, env)
     if not config_success:
         logging.critical("Can't read config file")
         exit(-1)
