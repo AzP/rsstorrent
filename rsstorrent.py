@@ -4,10 +4,10 @@
     downloads torrents to a specified folder."""
 
 __author__ = "Peter Asplund"
-__copyright__ = "Copyright 2011"
+__copyright__ = "Copyleft 2011"
 __credits__ = ["None"]
 __license__ = "GPL"
-__version__ = "0.2"
+__version__ = "0.3"
 __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
 __status__ = "Beta"
