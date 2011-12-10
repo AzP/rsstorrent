@@ -266,9 +266,9 @@ def do_main_program():
         for site in sites:
             site.print_debug()
 
-if __name__ == "__main__":
-    do_main_program()
-
+#if __name__ == "__main__":
+#    do_main_program()
+#
 with daemon.DaemonContext():
     do_main_program()
 
