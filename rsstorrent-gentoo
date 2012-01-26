@@ -1,6 +1,6 @@
 #!/sbin/runscript
-#
-# chkconfig: 35 90 12
+# Copyleft Peter Asplund 2012 
+# Distributed under the terms of the GNU General Public License v2
 # description: rsstorrent
 #
 
@@ -13,38 +13,36 @@ depend() {
 
 # Setup variables
 NAME=rsstorrent
-PATH=./
-DAEMON=./$NAME
-PIDFILE=/var/run/$NAME.pid
-LOGFILE=/var/log/$NAME.log
-SCRIPTNAME=/etc/init.d/$NAME
-USER=peter
+DAEMON=/usr/bin/${NAME}.py
+PIDFILE=/var/run/${NAME}/${NAME}.pid
+LOGFILE=/var/log/${NAME}/${NAME}.log
 
 # Check for an invalid user or one without a home directory
-eval USERHOME=~$USER
+eval USERHOME=~$RSSTORRENT_USER
 if [ "${USERHOME#/}" = "${USERHOME}" ]; then
-    eerror "$NAME: The user '$USER' specified in $DEFAULT is invalid."
+    eerror "${NAME}: The user '$RSSTORRENT_USER' specified in $DEFAULT is invalid."
     exit 1
 fi
 
 # Check if group is not specified and assign a proper group
 if [ -z $GROUP ]; then
-   GROUP="$USER"
+   GROUP="users"
 fi
 
 # Check config file
 checkconfig() {
-	local conf="~/.rsstorrent/$NAME.conf"
+	local conf="${USERHOME}/.${NAME}/${NAME}.conf"
 
 	if [ -e "${conf}" ] ; then
-		if [ -n "$(find ~/rsstorrent -maxdepth 1 -name rsstorrent.conf -perm +0004)" ] ; then
+		if [ -n "$(find ${USERHOME}/.rsstorrent -maxdepth 1 -name ${NAME}.conf -perm +0004)" ] ; then
 			eerror "${conf} must not be world-readable. Run e.g.:"
 			eerror "   chmod 640 ${conf}"
 			eerror "   chown root:rsstorrent ${conf}"
 			return 1
 		fi
 	else
-		eerror "~/.rsstorrent/rsstorrent.conf is needed to run $NAME"
+		eerror "Running rsstorrent as $RSSTORRENT_USER"
+		eerror "${USERHOME}/.rsstorrent/rsstorrent.conf is needed to run ${NAME}"
 		eerror "There is a sample file included in the package"
 		return 1
 	fi
@@ -53,34 +51,35 @@ checkconfig() {
 # Start the service
 start() {
         checkconfig || return 1
-        ebegin "Starting $NAME service: "
+		local piddir=$(dirname ${PIDFILE})
+		if [ ! -d ${piddir} ] ; then
+			ebegin "Making ${piddir}"
+			mkdir -p ${piddir}
+			eend $?
+			ebegin "Changing permissions of ${piddir}"
+			chown ${RSSTORRENT_USER}:${GROUP} ${piddir}
+			eend $?
+		fi
+
+		local logdir=$(dirname ${LOGFILE})
+		if [ ! -d ${logdir} ] ; then
+			ebegin "Making ${logdir}"
+			mkdir -p ${logdir}
+			eend $?
+			ebegin "Changing permissions of ${logdir} to ${RSSTORRENT_USER}:${GROUP}"
+			chown ${RSSTORRENT_USER}:${GROUP} ${logdir}
+			eend $?
+		fi
+        ebegin "Starting ${SVCNAME} service: "
+
         ### Create the lock file ###
-        touch $PIDFILE
-        start-stop-daemon --start --quiet --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- || return 1
+        start-stop-daemon --background --start --user ${RSSTORRENT_USER} --name ${NAME} \
+			--make-pidfile --pidfile ${PIDFILE} --exec $DAEMON -- --logfile ${LOGFILE}
         eend $?
 }
 
-### main logic ###
-# case "$1" in
-#   start)
-        #start
-        #;;
-  #stop)
-        #stop
-        #;;
-  #status)
-  #      status $DAEMON
-  #      ;;
-  #reload)
-        #do_reload
-        #;;
-  #restart|force-reload|condrestart)
-        #stop
-        #start
-        #;;
-#  *)
- #       echo $"Usage: $0 {start|stop|restart|reload|status}"
-  #      exit 1
-#esac
-
-#exit 0
+stop() {
+	ebegin "Stopping ${SVCNAME}"
+	start-stop-daemon --stop --signal USR1 --pidfile ${PIDFILE}
+	eend $?
+}
