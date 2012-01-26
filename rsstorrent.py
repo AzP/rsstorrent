@@ -157,6 +157,7 @@ def update_list_from_feed(url, regexp_keys):
             if key.search(item["title"]):
                 logging.info(item["title"] + " : " + item["link"])
                 found_items.append(item["link"])
+    logging.info("Updated Feed: " + feed['feed']['title'])
     return found_items
 
 
@@ -205,11 +206,29 @@ def convert_keys_to_regexps(site):
         site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
+def setup_logging(env, options):
+    """ Setup logging to file or tty. """
+    log_file=''
+    if not options.debug:
+        if options.log_file:
+            log_file = options.log_file
+        else:
+            log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
+
+    formatting = '%(asctime)s %(levelname)s: %(message)s'
+    if (options.verbose):
+        logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
+    else:
+        logging.basicConfig(filename=log_file, format=formatting, level=logging.INFO)
+
+
 def do_main_program():
     """ Main function. """
     # Parse command line commands
     parser = OptionParser()
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
+                    help="Verbose logging", default=False)
+    parser.add_option("-d", "--debug", action="store_true", dest="debug",
                     help="Print debug information to console", default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
                     help="write log to FILE", metavar="FILE")
@@ -219,21 +238,7 @@ def do_main_program():
         logging.warning("Required variables not supplied")
 
     env = Environment()
-
-    # Setup logging to file
-    if options.log_file:
-        log_file = options.log_file
-    else:
-        log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
-
-    formatting = '%(asctime)s %(levelname)s: %(message)s'
-    if (options.verbose):
-        print("Verbose mode")
-        logging.basicConfig(format=formatting, level=logging.DEBUG)
-    else:
-        logging.basicConfig(filename=log_file,
-                format=formatting,
-                level=logging.DEBUG)
+    setup_logging(env, options)
 
     # Read config file, if it can't find it, copy it from current folder
     if not os.path.exists(env.config_file_path):
@@ -251,6 +256,12 @@ def do_main_program():
     convert_keys_to_regexps(sites)
     site_login(sites)
 
+    # Print verbose/debug output if enabled
+    if options.verbose:
+        env.print_debug()
+        #for site in sites:
+        sites.print_debug()
+
     # Main loop
     while (True):
         download_list = update_list_from_feed(sites.feed_url, sites.regexp_keys)
@@ -261,14 +272,9 @@ def do_main_program():
 
         time.sleep(sites.time_interval)
 
-    if 0:
-        env.print_debug()
-        for site in sites:
-            site.print_debug()
-
-#if __name__ == "__main__":
-#    do_main_program()
-#
-with daemon.DaemonContext():
+if __name__ == "__main__":
     do_main_program()
+
+#with daemon.DaemonContext():
+#    do_main_program()
 
