@@ -14,6 +14,8 @@ __status__ = "Beta"
 
 import os
 import daemon
+import signal
+import lockfile
 import feedparser
 import urllib
 import urllib2
@@ -25,6 +27,7 @@ import shutil
 import ConfigParser
 from optparse import OptionParser
 
+global Running;
 
 class Environment:
     """ Keeps track of all files and directories """
@@ -77,7 +80,7 @@ class Site:
 
     def print_debug(self):
         """ Dump all local variables """
-        logging.debug("\nSite: ")
+        logging.debug("Site: ")
         logging.debug(self.feed_url)
         logging.debug(self.login_url)
         logging.debug(self.keys)
@@ -220,6 +223,14 @@ def setup_logging(env, options):
         logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
     else:
         logging.basicConfig(filename=log_file, format=formatting, level=logging.INFO)
+    return log_file
+
+
+def cleanup_program():
+    """ Set Running to false so program loop exits. """
+    global Running;
+    Running=False;
+    logging.info("Running set to False")
 
 
 def do_main_program():
@@ -230,15 +241,20 @@ def do_main_program():
                     help="Verbose logging", default=False)
     parser.add_option("-d", "--debug", action="store_true", dest="debug",
                     help="Print debug information to console", default=False)
+    parser.add_option("-D", "--daemon", action="store_true", dest="daemon",
+                    help="Run as daemon", default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
                     help="write log to FILE", metavar="FILE")
+    parser.add_option("-p", "--pidfile", dest="pid_file",
+                    help="set pidfile to FILE", metavar="FILE",
+                    default='/var/run/rsstorrent/rsstorrent.pid')
     (options, args) = parser.parse_args()
 
     if args:
         logging.warning("Required variables not supplied")
 
     env = Environment()
-    setup_logging(env, options)
+    log_file_path = setup_logging(env, options)
 
     # Read config file, if it can't find it, copy it from current folder
     if not os.path.exists(env.config_file_path):
@@ -262,19 +278,46 @@ def do_main_program():
         #for site in sites:
         sites.print_debug()
 
-    # Main loop
-    while (True):
-        download_list = update_list_from_feed(sites.feed_url, sites.regexp_keys)
+    
+    if options.daemon:
+        # Set up some Daemon stuff
+        context = daemon.DaemonContext(
+                umask=0o002,
+                pidfile=lockfile.FileLock(options.pid_file),
+                )
+        context.signal_map = {
+                signal.SIGTERM: cleanup_program,
+                signal.SIGHUP: 'terminate',
+                }
+        # Open all important files and list them
+        cache_file_handle = open(env.cache_file_path, 'a+') 
+        config_file_handle = open(env.config_file_path, 'a+') 
+        if log_file_path:
+            log_file_handle = open(log_file_path, 'w+') 
+            context.file_preserve = [cache_file_handle, config_file_handle,
+                    log_file_handle]
+        else:
+            context.file_preserve = [cache_file_handle, config_file_handle]
 
+        with context:
+            logging.info("Entering daemon context")
+            main_loop(env, sites)
+    else:
+        main_loop(env, sites)
+
+def main_loop(env, sites):
+    """ Main program loop """
+    global Running;
+    Running = True;
+    # Main loop
+    while (Running):
+        download_list = update_list_from_feed(sites.feed_url, sites.regexp_keys)
         if len(download_list):
             process_download_list(env.cache_file_path,
                     env.download_dir, download_list)
-
         time.sleep(sites.time_interval)
+
 
 if __name__ == "__main__":
     do_main_program()
-
-#with daemon.DaemonContext():
-#    do_main_program()
 
