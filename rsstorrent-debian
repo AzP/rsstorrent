@@ -1,86 +1,180 @@
-#!/sbin/runscript
-#
-# chkconfig: 35 90 12
-# description: rsstorrent
-#
+#!/bin/sh
+# Copyleft Peter Asplund 2012 
+# Distributed under the terms of the GNU General Public License v2
+### BEGIN INIT INFO
+# Provides:          rsstorrent
+# Required-Start:    $network $syslog
+# Required-Stop:     $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Automatic torrent file download
+# Description:       A sercive to automatically download torrent files from an RSS feed based on regular expressions
+### END INIT INFO
 
-# Get function from functions library
-source /etc/init.d/functions.sh
+# Author: Peter Asplund <peter.azp@gmail.com>
+
+# Do NOT "set -e"
+#
 
 depend() {
     need localmount net
 }
 
+unset USER
+
 # Setup variables
 NAME=rsstorrent
-PATH=./
-DAEMON=./$NAME
-PIDFILE=/var/run/$NAME.pid
-LOGFILE=/var/log/$NAME.log
-SCRIPTNAME=/etc/init.d/$NAME
-USER=peter
+DESC="Torrent downloading script"
+DAEMON=/usr/bin/${NAME}.py
+PIDFILE=/var/run/${NAME}/${NAME}.pid
+LOGFILE=/var/log/${NAME}/${NAME}.log
+SCRIPTNAME=/etc/init.d/${NAME}
+
+# Exit if the package is not installed
+[ -x $DAEMON ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
 
 # Check for an invalid user or one without a home directory
-eval USERHOME=~$USER
+eval USERHOME=~${RSSTORRENT_USER}
 if [ "${USERHOME#/}" = "${USERHOME}" ]; then
-    eerror "$NAME: The user '$USER' specified in $DEFAULT is invalid."
+    log_daemon_msg "${NAME}: The user '${RSSTORRENT_USER}' specified in $DEFAULT is invalid.\n"
     exit 1
 fi
 
 # Check if group is not specified and assign a proper group
 if [ -z $GROUP ]; then
-   GROUP="$USER"
+   GROUP="users"
 fi
 
 # Check config file
 checkconfig() {
-	local conf="~/.rsstorrent/$NAME.conf"
+	local conf="${USERHOME}/.${NAME}/${NAME}.conf"
 
 	if [ -e "${conf}" ] ; then
-		if [ -n "$(find ~/rsstorrent -maxdepth 1 -name rsstorrent.conf -perm +0004)" ] ; then
-			eerror "${conf} must not be world-readable. Run e.g.:"
-			eerror "   chmod 640 ${conf}"
-			eerror "   chown root:rsstorrent ${conf}"
+		if [ -n "$(find ${USERHOME}/.rsstorrent -maxdepth 1 -name ${NAME}.conf -perm +0004)" ] ; then
+			log_daemon_msg "${conf} must not be world-readable. Run e.g.:\n"
+			log_daemon_msg "   chmod 640 ${conf}\n"
+			log_daemon_msg "   chown root:rsstorrent ${conf}\n"
 			return 1
 		fi
 	else
-		eerror "~/.rsstorrent/rsstorrent.conf is needed to run $NAME"
-		eerror "There is a sample file included in the package"
+		log_daemon_msg "Running rsstorrent as ${RSSTORRENT_USER}\n"
+		log_daemon_msg "${USERHOME}/.rsstorrent/rsstorrent.conf is needed to run ${NAME}\n"
+		log_daemon_msg "There is a sample file included in the package\n"
 		return 1
 	fi
 }
 
-# Start the service
-start() {
+#
+# Function that starts the daemon/service
+#
+do_start() {
+		# Return
+		#   0 if daemon has been started
+		#   1 if daemon was already running
+		#   2 if daemon could not be started
         checkconfig || return 1
-        ebegin "Starting $NAME service: "
         ### Create the lock file ###
-        touch $PIDFILE
-        start-stop-daemon --start --quiet --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- || return 1
-        eend $?
+		local piddir=$(dirname ${PIDFILE})
+		if [ ! -d ${piddir} ] ; then
+			log_daemon_msg "Creating ${piddir}"
+			mkdir -p ${piddir} || return 2
+			log_daemon_msg "Changing permissions of ${piddir} to ${RSSTORRENT_USER}:${GROUP}"
+			chown ${RSSTORRENT_USER}:${GROUP} ${piddir} || return 2
+		fi
+
+        ### Create the log file ###
+		local logdir=$(dirname ${LOGFILE})
+		if [ ! -d ${logdir} ] ; then
+			log_daemon_msg "Creating ${logdir}"
+			mkdir -p ${logdir} || return 2
+			log_daemon_msg "Changing permissions of ${logdir} to ${RSSTORRENT_USER}:${GROUP}"
+			chown ${RSSTORRENT_USER}:${GROUP} ${logdir} || return 2
+		fi
+
+        start-stop-daemon --background --start --chuid ${RSSTORRENT_USER}:${GROUP} --name ${NAME} \
+			--make-pidfile --pidfile ${PIDFILE} --exec $DAEMON --test > /dev/null || return 1
+        start-stop-daemon --background --start --chuid ${RSSTORRENT_USER}:${GROUP} --name ${NAME} \
+			--make-pidfile --pidfile ${PIDFILE} --exec $DAEMON -- --logfile ${LOGFILE} || return 2
 }
 
-### main logic ###
-# case "$1" in
-#   start)
-        #start
-        #;;
-  #stop)
-        #stop
-        #;;
-  #status)
-  #      status $DAEMON
-  #      ;;
-  #reload)
-        #do_reload
-        #;;
-  #restart|force-reload|condrestart)
-        #stop
-        #start
-        #;;
-#  *)
- #       echo $"Usage: $0 {start|stop|restart|reload|status}"
-  #      exit 1
-#esac
+do_stop() {
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+	# Wait for children to finish too if this is a daemon that forks
+	# and if the daemon is only ever run from this initscript.
+	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+	[ "$?" = 2 ] && return 2
+	# Many daemons don't delete their pidfiles when they exit.
+	rm -rf $PIDFILE
+	return "$RETVAL"
+}
 
-#exit 0
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  #reload|force-reload)
+	#
+	# If do_reload() is not implemented then leave this commented out
+	# and leave 'force-reload' as an alias for 'restart'.
+	#
+	#log_daemon_msg "Reloading $DESC" "$NAME"
+	#do_reload
+	#log_end_msg $?
+	#;;
+  restart|force-reload)
+	#
+	# If the "reload" option is implemented then remove the
+	# 'force-reload' alias
+	#
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+	  	# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
