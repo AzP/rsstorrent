@@ -1,4 +1,4 @@
-I kinda need to add something here. Basically:
+Not to hard really. Basically:
 
 1. Download the files and unpack into a directory
 2. Change the rsstorrent.py to be runnable (chmod +x rsstorrent.py or right-click it, choose properties and fix it there)
