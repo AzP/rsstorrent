@@ -179,7 +179,6 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
             filename = input_line.split("/")[-1]
-	    filename = input_line.partition("name=")[2]
             logging.info("Processing: " + input_line)
 	    if len(filename) < 1:
 		logging.critical("I was not able to find you a filename! The file cannot be saved!")
