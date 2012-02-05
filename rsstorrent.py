@@ -7,7 +7,7 @@ __author__ = "Peter Asplund"
 __copyright__ = "Copyleft 2011"
 __credits__ = ["None"]
 __license__ = "GPL"
-__version__ = "0.3"
+__version__ = "0.4"
 __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
 __status__ = "Beta"
@@ -252,15 +252,17 @@ def do_main_program():
     parser.add_option("-D", "--daemon", action="store_true", dest="daemon",
                     help="Run as daemon", default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
-                    help="write log to FILE", metavar="FILE")
+                    help="Write log to FILE", metavar="FILE")
     parser.add_option("-p", "--pidfile", dest="pid_file",
-                    help="set pidfile to FILE", metavar="FILE",
+                    help="Set pidfile to FILE", metavar="FILE",
                     default='/var/run/rsstorrent/rsstorrent.pid')
     parser.add_option("--cc", "--cache-clear", action="store_true", dest="cache_clear",
-                    help="clear the cache file", default=False)
+                    help="Clear the cache file", default=False)
     parser.add_option("--ci", "--cache-ignore", action="store_true", dest="cache_ignore",
-                    help="work the cache just as normal, except download all files anyway", default=False)
+                    help="Work the cache just as normal, except download all files anyway", default=False)
     (options, args) = parser.parse_args()
+
+    logging.info("Starting rsstorrent...")
 
     if args:
         logging.warning("Required variables not supplied")
@@ -310,17 +312,21 @@ def do_main_program():
         cache_file_handle = open(env.cache_file_path, 'a+') 
         config_file_handle = open(env.config_file_path, 'a+') 
         if log_file_path:
-            log_file_handle = open(log_file_path, 'a+') 
+            log_file_handle = logging.root.handlers[0].stream
             context.file_preserve = [cache_file_handle, config_file_handle,
                     log_file_handle]
         else:
             context.file_preserve = [cache_file_handle, config_file_handle]
 
+        logging.debug("Entering daemon context")
         with context:
-            logging.info("Entering daemon context")
+            logging.debug("In daemon context")
             main_loop(env, sites, options)
     else:
         main_loop(env, sites, options)
+
+    logging.info("Stopping rsstorrent...")
+    logging.info("Exting.")
 
 def main_loop(env, sites, options):
     """ Main program loop """
