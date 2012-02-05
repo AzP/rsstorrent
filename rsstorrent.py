@@ -310,7 +310,7 @@ def do_main_program():
         cache_file_handle = open(env.cache_file_path, 'a+') 
         config_file_handle = open(env.config_file_path, 'a+') 
         if log_file_path:
-            log_file_handle = open(log_file_path, 'w+') 
+            log_file_handle = open(log_file_path, 'a+') 
             context.file_preserve = [cache_file_handle, config_file_handle,
                     log_file_handle]
         else:
