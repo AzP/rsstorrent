@@ -84,12 +84,14 @@ class Site:
         logging.debug(self.feed_url)
         logging.debug(self.login_url)
         logging.debug(self.keys)
+	# spacer for easy reading
+	logging.debug(".")
 
 
 def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
-    logging.info("Reading configuration file")
+    logging.info("Reading configuration file: " + cfg_file)
     config = ConfigParser.SafeConfigParser()
     config.read(cfg_file)
     sections = config.sections()
@@ -164,7 +166,7 @@ def update_list_from_feed(url, regexp_keys):
     return found_items
 
 
-def process_download_list(cache, download_dir, input_list):
+def process_download_list(cache, download_dir, input_list, cache_ign):
     """ Process the list of waiting downloads. """
     # Open cache to check if file has been downloaded
     if not os.path.exists(cache):
@@ -176,14 +178,20 @@ def process_download_list(cache, download_dir, input_list):
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
-            filename = input_line.partition("name=")[2]
+            filename = input_line.split("/")[-1]
+	    filename = input_line.partition("name=")[2]
+            logging.info("Processing: " + input_line)
+	    if len(filename) < 1:
+		logging.critical("I was not able to find you a filename! The file cannot be saved!")
+		continue
 
-            if filename in cached_files:
+	    logging.info("Ignore cache: " + str(bool(cache_ign)))
+
+            if (filename in cached_files) and not cache_ign:
                 logging.info("File already downloaded: " + input_line)
                 continue
-
-            filename = input_line.partition("name=")[2]
-            logging.info("Downloading " + filename)
+            #filename = input_line.partition("name=")[2]
+            logging.info("Downloading: " + filename)
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
@@ -248,6 +256,10 @@ def do_main_program():
     parser.add_option("-p", "--pidfile", dest="pid_file",
                     help="set pidfile to FILE", metavar="FILE",
                     default='/var/run/rsstorrent/rsstorrent.pid')
+    parser.add_option("--cc", "--cache-clear", action="store_true", dest="cache_clear",
+                    help="clear the cache file", default=False)
+    parser.add_option("--ci", "--cache-ignore", action="store_true", dest="cache_ignore",
+                    help="work the cache just as normal, except download all files anyway", default=False)
     (options, args) = parser.parse_args()
 
     if args:
@@ -266,6 +278,11 @@ def do_main_program():
     if not config_success:
         logging.critical("Can't read config file")
         exit(-1)
+
+    if options.cache_clear:
+	# clear cache file
+	open(env.cache_file_path, 'w').close()
+	exit(0)
 
     if not os.path.exists(env.download_dir):
         os.mkdir(env.download_dir, 0o755)
@@ -301,11 +318,11 @@ def do_main_program():
 
         with context:
             logging.info("Entering daemon context")
-            main_loop(env, sites)
+            main_loop(env, sites, options)
     else:
-        main_loop(env, sites)
+        main_loop(env, sites, options)
 
-def main_loop(env, sites):
+def main_loop(env, sites, options):
     """ Main program loop """
     global Running;
     Running = True;
@@ -314,10 +331,15 @@ def main_loop(env, sites):
         download_list = update_list_from_feed(sites.feed_url, sites.regexp_keys)
         if len(download_list):
             process_download_list(env.cache_file_path,
-                    env.download_dir, download_list)
+                    env.download_dir, download_list, options.cache_ignore)
         time.sleep(sites.time_interval)
 
+try:
+    if __name__ == "__main__":
+	do_main_program()
 
-if __name__ == "__main__":
-    do_main_program()
+# catch keyboard exception
+except KeyboardInterrupt:
+	logging.critical("\n")
+	logging.critical("Keyboard Interrupted!")
 
