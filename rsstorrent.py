@@ -186,11 +186,12 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
         for input_line in input_list:
             filename = input_line.split("/")[-1]
             logging.info("Processing: " + input_line)
-	    if len(filename) < 1:
-		logging.critical("I was not able to find you a filename! The file cannot be saved!")
-		continue
 
-	    logging.info("Ignore cache: " + str(bool(cache_ign)))
+            if len(filename) < 1:
+                logging.critical("I was not able to find you a filename! The file cannot be saved!")
+                continue
+
+            logging.info("Ignore cache: " + str(bool(cache_ign)))
 
             if (filename in cached_files) and not cache_ign:
                 logging.info("File already downloaded: " + input_line)
@@ -344,10 +345,10 @@ def main_loop(env, sites, options):
 
 try:
     if __name__ == "__main__":
-	do_main_program()
+        do_main_program()
 
 # catch keyboard exception
 except KeyboardInterrupt:
-	logging.critical("\n")
-	logging.critical("Keyboard Interrupted!")
+    logging.critical("\n")
+    logging.critical("Keyboard Interrupted!")
 
