@@ -262,13 +262,13 @@ def do_main_program():
                     help="Work the cache just as normal, except download all files anyway", default=False)
     (options, args) = parser.parse_args()
 
-    logging.info("Starting rsstorrent...")
-
     if args:
-        logging.warning("Required variables not supplied")
+        print("Required variables not supplied.")
 
     env = Environment()
     log_file_path = setup_logging(env, options)
+
+    logging.info("Starting rsstorrent...")
 
     # Read config file, if it can't find it, copy it from current folder
     if not os.path.exists(env.config_file_path):
