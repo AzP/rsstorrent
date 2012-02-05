@@ -84,8 +84,8 @@ class Site:
         logging.debug(self.feed_url)
         logging.debug(self.login_url)
         logging.debug(self.keys)
-	# spacer for easy reading
-	logging.debug(".")
+        # spacer for easy reading
+        logging.debug(".")
 
 
 def read_config_file(cfg_file, sites, env):
@@ -179,13 +179,13 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
             filename = input_line.split("/")[-1]
-	    filename = input_line.partition("name=")[2]
+            filename = input_line.partition("name=")[2]
             logging.info("Processing: " + input_line)
-	    if len(filename) < 1:
-		logging.critical("I was not able to find you a filename! The file cannot be saved!")
-		continue
+            if len(filename) < 1:
+                logging.critical("I was not able to find you a filename! The file cannot be saved!")
+                continue
 
-	    logging.info("Ignore cache: " + str(bool(cache_ign)))
+            logging.info("Ignore cache: " + str(bool(cache_ign)))
 
             if (filename in cached_files) and not cache_ign:
                 logging.info("File already downloaded: " + input_line)
@@ -280,9 +280,9 @@ def do_main_program():
         exit(-1)
 
     if options.cache_clear:
-	# clear cache file
-	open(env.cache_file_path, 'w').close()
-	exit(0)
+        # clear cache file
+        open(env.cache_file_path, 'w').close()
+        exit(0)
 
     if not os.path.exists(env.download_dir):
         os.mkdir(env.download_dir, 0o755)
@@ -336,10 +336,10 @@ def main_loop(env, sites, options):
 
 try:
     if __name__ == "__main__":
-	do_main_program()
+        do_main_program()
 
 # catch keyboard exception
 except KeyboardInterrupt:
-	logging.critical("\n")
-	logging.critical("Keyboard Interrupted!")
+    logging.critical("\n")
+    logging.critical("Keyboard Interrupted!")
 
