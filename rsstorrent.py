@@ -217,9 +217,9 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
 def convert_keys_to_regexps(site):
     """ Process the list of keys and convert
         to compiled regular expressions. """
-    logging.info("Searching for: ")
-    logging.info(site.keys)
+    logging.info("Searching for: " + str(site.keys))
     for key in site.keys:
+        logging.info("Key: " + key)
         site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
