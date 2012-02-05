@@ -326,7 +326,12 @@ def main_loop(env, sites):
                     env.download_dir, download_list)
         time.sleep(sites.time_interval)
 
+try:
+    if __name__ == "__main__":
+	do_main_program()
 
-if __name__ == "__main__":
-    do_main_program()
+# catch keyboard exception
+except KeyboardInterrupt:
+	logging.critical("\n")
+	logging.critical("Keyboard Interrupted!")
 
