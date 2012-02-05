@@ -87,6 +87,12 @@ class Site:
 	# spacer for easy reading
 	logging.debug(".")
 
+def create_config_file(cfg_file):
+    with open(cfg_file, 'w+') as cfg_file_handle:
+        # Split the file by lines to get rid of whitespace
+	lines = ["[General]\n", "# Directory which to download torrents to\n", "download_dir = /home/username/Downloads/\n", "\n", "[Site1]\n", "# Interval between checks in minutes\n", "interval = 7\n", "\n", "# URL to rss feed\n", "rss_url = http://www.urltosite.com\n", "\n", "# URL to site login page/script\n", "login_url = http://www.urltosite.com/takelogin.php\n", "\n", "# Search keys for the parsing\n", "keys = keys*to*search*for separated*by spaces\n", "\n", "# Username and Password to torrent site\n", "username = username\n", "password = password\n"]
+        for line in lines:
+            cfg_file_handle.writelines(line)
 
 def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
@@ -267,9 +273,12 @@ def do_main_program():
     env = Environment()
     log_file_path = setup_logging(env, options)
 
-    # Read config file, if it can't find it, copy it from current folder
+    # Read config file, if it can't find it, create one
     if not os.path.exists(env.config_file_path):
-        shutil.copy("rsstorrent.conf", env.config_dir_path)
+	create_config_file(env.config_dir_path + env.config_file)
+	logging.critical("There was no config file found, I just created one.")
+	logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
+	exit(-1)
 
     sites = Site()
     config_success = read_config_file(env.config_file_path,
