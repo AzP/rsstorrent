@@ -84,12 +84,14 @@ class Site:
         logging.debug(self.feed_url)
         logging.debug(self.login_url)
         logging.debug(self.keys)
+	# spacer for easy reading
+	logging.debug(".")
 
 
 def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
-    logging.info("Reading configuration file")
+    logging.info("Reading configuration file: " + cfg_file)
     config = ConfigParser.SafeConfigParser()
     config.read(cfg_file)
     sections = config.sections()
@@ -177,6 +179,8 @@ def process_download_list(cache, download_dir, input_list):
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
             filename = input_line.partition("name=")[2]
+            logging.info("Processing: " + filename)
+	    logging.info("Ignore cache: " + str(bool(cache_ign)))
 
             if filename in cached_files:
                 logging.info("File already downloaded: " + input_line)
