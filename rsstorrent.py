@@ -186,8 +186,8 @@ def process_download_list(cache, download_dir, input_list):
                 logging.info("File already downloaded: " + input_line)
                 continue
 
-            filename = input_line.partition("name=")[2]
-            logging.info("Downloading " + filename)
+            #filename = input_line.partition("name=")[2]
+            logging.info("Downloading: " + input_line)
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
