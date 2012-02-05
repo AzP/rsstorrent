@@ -178,8 +178,13 @@ def process_download_list(cache, download_dir, input_list):
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
-            filename = input_line.partition("name=")[2]
-            logging.info("Processing: " + filename)
+            filename = input_line.split("/")[-1]
+	    filename = input_line.partition("name=")[2]
+            logging.info("Processing: " + input_line)
+	    if len(filename) < 1:
+		logging.critical("I was not able to find you a filename! The file cannot be saved!")
+		continue
+
 	    logging.info("Ignore cache: " + str(bool(cache_ign)))
 
             if filename in cached_files:
@@ -187,7 +192,7 @@ def process_download_list(cache, download_dir, input_list):
                 continue
 
             #filename = input_line.partition("name=")[2]
-            logging.info("Downloading: " + input_line)
+            logging.info("Downloading: " + filename)
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
