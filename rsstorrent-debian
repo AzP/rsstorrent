@@ -104,9 +104,9 @@ do_start() {
 		fi
 
         start-stop-daemon --start --chuid ${RSSTORRENT_USER}:${GROUP} \
-			--pidfile ${PIDFILE} --exec $DAEMON --test > /dev/null || return 1
+			--exec $DAEMON --test > /dev/null || return 1
         start-stop-daemon --start --chuid ${RSSTORRENT_USER}:${GROUP} \
-			--pidfile ${PIDFILE} --exec $DAEMON -- -v --daemon --pidfile ${PIDFILE} --logfile ${LOGFILE} || return 2
+			--exec $DAEMON -- -v --daemon --pidfile ${PIDFILE} --logfile ${LOGFILE} || return 2
 }
 
 do_stop() {
