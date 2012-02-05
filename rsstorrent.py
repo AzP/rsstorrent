@@ -190,7 +190,6 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
             if (filename in cached_files) and not cache_ign:
                 logging.info("File already downloaded: " + input_line)
                 continue
-            #filename = input_line.partition("name=")[2]
             logging.info("Downloading: " + filename)
             try:
                 request = urllib2.urlopen(input_line)
@@ -312,15 +311,17 @@ def do_main_program():
         cache_file_handle = open(env.cache_file_path, 'a+') 
         config_file_handle = open(env.config_file_path, 'a+') 
         if log_file_path:
-            log_file_handle = logging.handlers.stream.fileno()
-            context.file_preserve = [cache_file_handle, config_file_handle,
+            log_file_handle = logging.root.handlers[0].stream.fileno()
+            logging.debug("Adding logging handle to files_preserve: " + log_file_path)
+            context.files_preserve = [cache_file_handle,
+                    config_file_handle,
                     log_file_handle]
         else:
-            context.file_preserve = [cache_file_handle, config_file_handle]
+            context.files_preserve = [cache_file_handle, config_file_handle]
 
         logging.debug("Entering daemon context")
         with context:
-            logging.debug("In daemon context")
+            logging.debug("Entered daemon context")
             main_loop(env, sites, options)
     else:
         main_loop(env, sites, options)
