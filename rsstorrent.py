@@ -226,13 +226,19 @@ def convert_keys_to_regexps(site):
 def setup_logging(env, options):
     """ Setup logging to file or tty. """
     log_file=''
+    formatting = '%(asctime)s %(levelname)s: %(message)s'
+
     if not options.debug:
         if options.log_file:
             log_file = options.log_file
         else:
             log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
+        # define a Handler which writes CRITICAL messages to the sys.stderr
+        console = logging.StreamHandler()
+        console.setLevel(logging.CRITICAL)
+        console.setFormatter(logging.Formatter(formatting))
+        logging.getLogger('').addHandler(console)
 
-    formatting = '%(asctime)s %(levelname)s: %(message)s'
     if (options.verbose):
         logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
     else:
