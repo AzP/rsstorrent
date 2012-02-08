@@ -110,24 +110,32 @@ def read_config_file(cfg_file, sites, env):
     config = ConfigParser.SafeConfigParser()
     config.read(cfg_file)
     sections = config.sections()
+    site = Site()
     for section in sections:
         if section == "General":
             # Save name of directory to download files to
             env.download_dir = config.get(section, "download_dir")
         else:
             # Save url to check
-            sites.login_url = config.get(section, "login_url")
+            site.login_url = config.get(section, "login_url")
             # Save url to check
-            sites.feed_url = config.get(section, "rss_url")
+            site.feed_url = config.get(section, "rss_url")
             # Save time interval (in seconds) for checking feeds
-            sites.time_interval = config.getfloat(section, "interval") * 60.0
+            site.time_interval = config.getfloat(section, "interval") * 60.0
             # Save list of words to look for
             keys_str = str(config.get(section, "keys"))
-            sites.keys = keys_str.split()
+            site.keys = keys_str.split()
             # Save username to site
-            sites.username = config.get(section, "username")
+            site.username = config.get(section, "username")
             # Save password to site
-            sites.password = config.get(section, "password")
+            site.password = config.get(section, "password")
+            # Add to array of sites
+            sites.append(site)
+
+    # safety check
+    if len(sites) < 1:
+        return False
+
     return True
 
 
@@ -227,13 +235,14 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
             cache_file_handle.writelines(filename + "\n")
 
 
-def convert_keys_to_regexps(site):
+def convert_keys_to_regexps(sites):
     """ Process the list of keys and convert
         to compiled regular expressions. """
-    logging.info("Searching for: " + str(site.keys))
-    for key in site.keys:
-        logging.info("Key: " + key)
-        site.regexp_keys.append(re.compile(key, re.IGNORECASE))
+    for site in sites:
+        logging.info("Searching for: " + str(site.keys))
+        for key in site.keys:
+            logging.info("Key: " + key)
+            site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
 def setup_logging(env, options):
@@ -302,7 +311,8 @@ def do_main_program():
 	logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
 	exit(-1)
 
-    sites = Site()
+    #sites = Site()
+    sites = []
     config_success = read_config_file(env.config_file_path,
                                     sites, env)
     if not config_success:
@@ -322,8 +332,8 @@ def do_main_program():
     # Print verbose/debug output if enabled
     if options.verbose:
         env.print_debug()
-        #for site in sites:
-        sites.print_debug()
+        for site in sites:
+            site.print_debug()
 
     
     if options.daemon:
@@ -356,13 +366,45 @@ def main_loop(env, sites, options):
     """ Main program loop """
     global Running;
     Running = True;
+    global children;
+    children = []
     # Main loop
-    while (Running):
-        download_list = update_list_from_feed(sites.feed_url, sites.regexp_keys)
-        if len(download_list):
-            process_download_list(env.cache_file_path,
-                    env.download_dir, download_list, options.cache_ignore)
-        time.sleep(sites.time_interval)
+    # while (Running):
+    for site in sites:
+        child = os.fork()
+        if child:
+            # still in the parent process
+            # while(Running):
+            logging.debug("---- in here " + site.feed_url)
+            ctmp = Child()
+            ctmp.pid = child
+            children.append(ctmp)
+        else:
+            while(Running):
+                """# in child process
+                download_list = update_list_from_feed(site.feed_url, site.regexp_keys)
+                if len(download_list):
+                    logging.debug("Start downloading, I found " + len(download_list) + " items.")
+                    process_download_list(env.cache_file_path,
+                            env.download_dir, download_list, options.cache_ignore)
+                time.sleep(site.time_interval)"""
+                logging.debug("lala: " + site.feed_url)
+                time.sleep(5)
+                logging.debug("lala end: " + site.feed_url)
+                exit(0)
+        logging.debug(site.feed_url)
+    #exit(0)
+    #while(Running):
+    for child in children:
+        while(child.isAlive):
+            logging.debug("in here")
+            #child._exit(9)
+            (pid, status) = os.waitpid(child.pid, os.WNOHANG)
+            if pid <= 0:
+                break
+            child.isAlive = False
+    time.sleep(10)
+
 
 try:
     if __name__ == "__main__":
@@ -370,6 +412,12 @@ try:
 
 # catch keyboard exception
 except KeyboardInterrupt:
+    #for child in children:
+        #child._exit(9)
+    #    (pid, status) = os.waitpid(-1, os.WNOHANG)
+    #    if pid <= 0:
+    #        break
+
     logging.critical("\n")
     logging.critical("Keyboard Interrupted!")
 
