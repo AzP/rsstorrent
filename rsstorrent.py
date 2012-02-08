@@ -320,9 +320,10 @@ def do_main_program():
         exit(-1)
 
     if options.cache_clear:
-	# clear cache file
-	open(env.cache_file_path, 'w').close()
-	exit(0)
+        # clear cache file
+        open(env.cache_file_path, 'w').close()
+        logging.info("Cleared cache")
+        exit(0)
 
     if not os.path.exists(env.download_dir):
         os.mkdir(env.download_dir, 0o755)
