@@ -401,10 +401,10 @@ def main_loop(env, sites, options):
             #while(child.isAlive):
             #child._exit(9)
             (pid, status) = os.waitpid(child.pid, os.WNOHANG)
-            if pid <= 0:
+            if pid < 0:
+                child.isAlive = False
                 break
-            child.isAlive = False
-    time.sleep(10)
+        time.sleep(60)
 
 
 try:
