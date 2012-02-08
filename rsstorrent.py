@@ -111,8 +111,8 @@ def read_config_file(cfg_file, sites, env):
     config = ConfigParser.SafeConfigParser()
     config.read(cfg_file)
     sections = config.sections()
-    site = Site()
     for section in sections:
+        site = Site()
         if section == "General":
             # Save name of directory to download files to
             env.download_dir = config.get(section, "download_dir")
