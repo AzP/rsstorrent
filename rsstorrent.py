@@ -190,7 +190,7 @@ def update_list_from_feed(url, regexp_keys):
     return found_items
 
 
-def process_download_list(cache, download_dir, input_list, cache_ign):
+def process_download_list(cache, download_dir, input_list, options):
     """ Process the list of waiting downloads. """
     # Open cache to check if file has been downloaded
     if not os.path.exists(cache):
@@ -199,7 +199,6 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
 
     # Open cache file and start downloading
     with open(cache, 'a+') as cache_file_handle:
-        global no_downloads
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
@@ -210,11 +209,11 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
                 logging.critical("I was not able to find you a filename! The file cannot be saved!")
                 continue
 
-            if (filename in cached_files) and not cache_ign:
+            if (filename in cached_files) and not options.cache_ignore:
                 logging.info("File already downloaded: " + input_line)
                 continue
             #filename = input_line.partition("name=")[2]
-            if no_downloads:
+            if options.no_downloads:
                 continue
 
             logging.info("Start downloading: " + filename)
@@ -391,7 +390,7 @@ def main_loop(env, sites, options):
                 if len(download_list):
                     logging.debug("Start downloading, I found " + str(len(download_list)) + " items.")
                     process_download_list(env.cache_file_path,
-                            env.download_dir, download_list, options.cache_ignore)
+                            env.download_dir, download_list, options)
                 time.sleep(site.time_interval)
             exit(0)
         logging.debug(site.feed_url)
