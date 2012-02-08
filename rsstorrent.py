@@ -248,7 +248,7 @@ def convert_keys_to_regexps(sites):
 def setup_logging(env, options):
     """ Setup logging to file or tty. """
     log_file=''
-    formatting = '%(asctime)s %(levelname)s: %(message)s'
+    formatting = '%(asctime)s (%(process)d) %(levelname)s: %(message)s'
 
     if not options.debug:
         if options.log_file:
