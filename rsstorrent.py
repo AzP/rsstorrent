@@ -28,6 +28,15 @@ import ConfigParser
 from optparse import OptionParser
 
 global Running;
+global children;
+
+class Child:
+
+    pid = ""
+    isAlive = False
+
+    def __init__(self):
+        self.isAlive = True
 
 class Environment:
     """ Keeps track of all files and directories """
