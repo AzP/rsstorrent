@@ -212,7 +212,7 @@ def process_download_list(cache, download_dir, input_list, options):
             if (filename in cached_files) and not options.cache_ignore:
                 logging.info("File already downloaded: " + input_line)
                 continue
-            #filename = input_line.partition("name=")[2]
+
             if options.no_downloads:
                 continue
 
@@ -229,6 +229,7 @@ def process_download_list(cache, download_dir, input_list, options):
 
             with open(os.path.join(download_dir, filename), 'w') as local_file:
                 local_file.write(request.read())
+
             # Cache the downloaded file so it doesn't get downloaded again
             cache_file_handle.writelines(filename + "\n")
 
@@ -237,9 +238,7 @@ def convert_keys_to_regexps(sites):
     """ Process the list of keys and convert
         to compiled regular expressions. """
     for site in sites:
-        #logging.info("Searching for: " + str(site.keys))
         for key in site.keys:
-            #logging.info("Key: " + key)
             site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
@@ -309,10 +308,10 @@ def do_main_program():
 	    logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
 	    exit(-1)
 
-    #sites = Site()
     sites = []
     config_success = read_config_file(env.config_file_path,
                                     sites, env)
+
     if not config_success:
         logging.critical("Can't read config file")
         exit(-1)
@@ -369,15 +368,10 @@ def main_loop(env, sites, options):
     global children;
     children = []
     # Main loop
-    # while (Running):
-    #logging.debug("---")
-    #logging.debug(sites[0].feed_url + "\n"+ sites[1].feed_url + "\n"+sites[2].feed_url)    
-    #logging.debug("---")
     for site in sites:
         child = os.fork()
         if child:
             # still in the parent process
-            # while(Running):
             logging.debug("Create child proces for: " + site.feed_url)
             ctmp = Child()
             ctmp.pid = child
@@ -385,7 +379,6 @@ def main_loop(env, sites, options):
         else:
             while(Running):
                 # in child process
-                # logging.debug("Inside child process")
                 download_list = update_list_from_feed(site.feed_url, site.regexp_keys)
                 if len(download_list):
                     logging.debug("Start downloading, I found " + str(len(download_list)) + " items.")
@@ -394,12 +387,10 @@ def main_loop(env, sites, options):
                 time.sleep(site.time_interval)
             exit(0)
         logging.debug(site.feed_url)
-    #exit(0)
+
     while(Running):
         logging.debug("Looking into children...")
         for child in children:
-            #while(child.isAlive):
-            #child._exit(9)
             (pid, status) = os.waitpid(child.pid, os.WNOHANG)
             if pid < 0:
                 child.isAlive = False
@@ -413,12 +404,6 @@ try:
 
 # catch keyboard exception
 except KeyboardInterrupt:
-    #for child in children:
-        #child._exit(9)
-    #    (pid, status) = os.waitpid(-1, os.WNOHANG)
-    #    if pid <= 0:
-    #        break
-
     logging.critical("\n")
     logging.critical("Keyboard Interrupted!")
 
