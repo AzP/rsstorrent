@@ -90,9 +90,10 @@ class Site:
     def print_debug(self):
         """ Dump all local variables """
         logging.debug("Site: ")
-        logging.debug(self.feed_url)
-        logging.debug(self.login_url)
-        logging.debug(self.keys)
+        logging.debug("Feed url: " + self.feed_url)
+        logging.debug("Login url: " + self.login_url)
+        logging.debug("Keys: " + str(self.keys))
+        logging.debug("Interval: " + str(self.time_interval))
 	# spacer for easy reading
 	logging.debug(".")
 
@@ -209,16 +210,14 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
                 logging.critical("I was not able to find you a filename! The file cannot be saved!")
                 continue
 
-            logging.info("Ignore cache: " + str(bool(cache_ign)))
-
             if (filename in cached_files) and not cache_ign:
                 logging.info("File already downloaded: " + input_line)
                 continue
             #filename = input_line.partition("name=")[2]
-            logging.info("Downloading: " + filename)
             if no_downloads:
                 continue
 
+            logging.info("Start downloading: " + filename)
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
@@ -239,9 +238,9 @@ def convert_keys_to_regexps(sites):
     """ Process the list of keys and convert
         to compiled regular expressions. """
     for site in sites:
-        logging.info("Searching for: " + str(site.keys))
+        #logging.info("Searching for: " + str(site.keys))
         for key in site.keys:
-            logging.info("Key: " + key)
+            #logging.info("Key: " + key)
             site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
 
@@ -333,6 +332,7 @@ def do_main_program():
     # Print verbose/debug output if enabled
     if options.verbose:
         env.print_debug()
+        logging.info("Ignore cache: " + str(bool(options.cache_ignore)))
         for site in sites:
             site.print_debug()
 
@@ -371,6 +371,9 @@ def main_loop(env, sites, options):
     children = []
     # Main loop
     # while (Running):
+    #logging.debug("---")
+    #logging.debug(sites[0].feed_url + "\n"+ sites[1].feed_url + "\n"+sites[2].feed_url)    
+    #logging.debug("---")
     for site in sites:
         child = os.fork()
         if child:
@@ -383,19 +386,20 @@ def main_loop(env, sites, options):
         else:
             while(Running):
                 # in child process
+                # logging.debug("Inside child process")
                 download_list = update_list_from_feed(site.feed_url, site.regexp_keys)
                 if len(download_list):
-                    logging.debug("Start downloading, I found " + len(download_list) + " items.")
+                    logging.debug("Start downloading, I found " + str(len(download_list)) + " items.")
                     process_download_list(env.cache_file_path,
                             env.download_dir, download_list, options.cache_ignore)
                 time.sleep(site.time_interval)
             exit(0)
         logging.debug(site.feed_url)
     #exit(0)
-    #while(Running):
-    for child in children:
-        while(child.isAlive):
-            logging.debug("Looking into children...")
+    while(Running):
+        logging.debug("Looking into children...")
+        for child in children:
+            #while(child.isAlive):
             #child._exit(9)
             (pid, status) = os.waitpid(child.pid, os.WNOHANG)
             if pid <= 0:
