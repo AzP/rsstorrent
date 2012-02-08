@@ -181,6 +181,7 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
 
     # Open cache file and start downloading
     with open(cache, 'a+') as cache_file_handle:
+        global no_downloads
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
@@ -198,6 +199,9 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
                 continue
             #filename = input_line.partition("name=")[2]
             logging.info("Downloading: " + filename)
+            if no_downloads:
+                continue
+
             try:
                 request = urllib2.urlopen(input_line)
             except urllib2.HTTPError, exception:
@@ -272,6 +276,8 @@ def do_main_program():
                     help="clear the cache file", default=False)
     parser.add_option("--ci", "--cache-ignore", action="store_true", dest="cache_ignore",
                     help="work the cache just as normal, except download all files anyway", default=False)
+    parser.add_option("--nd", "--no-downloads", action="store_true", dest="no_downloads",
+                    help="perform a dry run, iaw: don't actually download the files", default=False)
     (options, args) = parser.parse_args()
 
     if args:
