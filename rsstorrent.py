@@ -304,10 +304,10 @@ def do_main_program():
 
     # Read config file, if it can't find it, create one
     if not os.path.exists(env.config_file_path):
-	create_config_file(env.config_dir_path + env.config_file)
-	logging.critical("There was no config file found, I just created one.")
-	logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
-	exit(-1)
+	    create_config_file(env.config_dir_path + env.config_file)
+	    logging.critical("There was no config file found, I just created one.")
+	    logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
+	    exit(-1)
 
     #sites = Site()
     sites = []
