@@ -376,29 +376,26 @@ def main_loop(env, sites, options):
         if child:
             # still in the parent process
             # while(Running):
-            logging.debug("---- in here " + site.feed_url)
+            logging.debug("Create child proces for: " + site.feed_url)
             ctmp = Child()
             ctmp.pid = child
             children.append(ctmp)
         else:
             while(Running):
-                """# in child process
+                # in child process
                 download_list = update_list_from_feed(site.feed_url, site.regexp_keys)
                 if len(download_list):
                     logging.debug("Start downloading, I found " + len(download_list) + " items.")
                     process_download_list(env.cache_file_path,
                             env.download_dir, download_list, options.cache_ignore)
-                time.sleep(site.time_interval)"""
-                logging.debug("lala: " + site.feed_url)
-                time.sleep(5)
-                logging.debug("lala end: " + site.feed_url)
-                exit(0)
+                time.sleep(site.time_interval)
+            exit(0)
         logging.debug(site.feed_url)
     #exit(0)
     #while(Running):
     for child in children:
         while(child.isAlive):
-            logging.debug("in here")
+            logging.debug("Looking into children...")
             #child._exit(9)
             (pid, status) = os.waitpid(child.pid, os.WNOHANG)
             if pid <= 0:
