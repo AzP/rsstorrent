@@ -94,8 +94,8 @@ class Site:
         logging.debug("Login url: " + self.login_url)
         logging.debug("Keys: " + str(self.keys))
         logging.debug("Interval: " + str(self.time_interval))
-	# spacer for easy reading
-	logging.debug(".")
+        # spacer for easy reading
+        logging.debug(".")
 
 def create_config_file(cfg_file):
     with open(cfg_file, 'w+') as cfg_file_handle:
@@ -184,9 +184,9 @@ def update_list_from_feed(url, regexp_keys):
     for key in regexp_keys:
         for item in feed["items"]:
             if key.search(item["title"]):
-                logging.info(item["title"] + " : " + item["link"])
+                logging.debug(item["title"] + " : " + item["link"])
                 found_items.append(item["link"])
-    logging.info("Updated Feed: " + feed['feed']['title'])
+    logging.debug("Updated Feed: " + feed['feed']['title'])
     return found_items
 
 
@@ -194,8 +194,11 @@ def process_download_list(cache, download_dir, input_list, options):
     """ Process the list of waiting downloads. """
     # Open cache to check if file has been downloaded
     if not os.path.exists(cache):
-        logging.info("Can't find cache directory")
-        return
+        if not options.ignore_cache:
+            logging.error("Can't find cache directory")
+            return
+        else:
+            logging.debug("No cache file was found, but caching was ignored anyway"
 
     # Open cache file and start downloading
     with open(cache, 'a+') as cache_file_handle:
@@ -203,14 +206,14 @@ def process_download_list(cache, download_dir, input_list, options):
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
             filename = input_line.split("/")[-1]
-            logging.info("Processing: " + input_line)
+            logging.debug("Processing: " + input_line)
 
             if len(filename) < 1:
                 logging.critical("I was not able to find you a filename! The file cannot be saved!")
                 continue
 
             if (filename in cached_files) and not options.cache_ignore:
-                logging.info("File already downloaded: " + input_line)
+                logging.debug("File already downloaded: " + input_line)
                 continue
 
             if options.no_downloads:
@@ -318,7 +321,7 @@ def do_main_program():
     # Read config file, if it can't find it, create one
     if not os.path.exists(env.config_file_path):
 	    create_config_file(env.config_dir_path + env.config_file)
-	    logging.critical("There was no config file found, I just created one.")
+	    logging.warning("There was no config file found, I just created one.")
 	    logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
 	    exit(-1)
 
@@ -384,6 +387,7 @@ def main_loop(env, sites, options):
     # Main loop
     for site in sites:
         child = os.fork()
+        logging.debug("Working: " + site.feed_url)
         if child:
             # still in the parent process
             logging.debug("Create child proces for: " + site.feed_url)
@@ -400,7 +404,7 @@ def main_loop(env, sites, options):
                             env.download_dir, download_list, options)
                 time.sleep(site.time_interval)
             exit(0)
-        logging.debug(site.feed_url)
+
 
     while(Running):
         logging.debug("Looking into children...")
