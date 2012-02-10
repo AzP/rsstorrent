@@ -241,27 +241,41 @@ def convert_keys_to_regexps(sites):
         for key in site.keys:
             site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
-
 def setup_logging(env, options):
     """ Setup logging to file or tty. """
     log_file=''
+    # Logging format for logfile and console messages
     formatting = '%(asctime)s (%(process)d) %(levelname)s: %(message)s'
-
-    if not options.debug:
-        if options.log_file:
-            log_file = options.log_file
-        else:
-            log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
-        # define a Handler which writes CRITICAL messages to the sys.stderr
-        console = logging.StreamHandler()
-        console.setLevel(logging.CRITICAL)
-        console.setFormatter(logging.Formatter(formatting))
-        logging.getLogger('').addHandler(console)
-
-    if (options.verbose):
-        logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
+    
+    # set log filepath
+    if options.log_file:
+        log_file = options.log_file
     else:
+        log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
+
+    # IMPORTANT!
+    # It is important to define the basic file logging before the console logging
+    if options.debug:
+        logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
+    elif options.verbose:
         logging.basicConfig(filename=log_file, format=formatting, level=logging.INFO)
+    else:
+        logging.basicConfig(filename=log_file, format=formatting, level=logging.CRITICAL)
+
+    # Always print messages to the console
+    # In normal operating mode only CRITICAL messages will be displayed
+    console = logging.StreamHandler()
+    if options.debug:
+        # define a Handler which writes CRITICAL messages to the sys.stderr
+        console.setLevel(logging.DEBUG)
+    elif options.verbose:
+        console.setLevel(logging.INFO)
+    else:
+        console.setLevel(logging.CRITICAL)
+
+    console.setFormatter(logging.Formatter(formatting))
+    logging.getLogger('').addHandler(console)
+
     return log_file
 
 
