@@ -198,7 +198,7 @@ def process_download_list(cache, download_dir, input_list, options):
             logging.error("Can't find cache directory")
             return
         else:
-            logging.debug("No cache file was found, but caching was ignored anyway"
+            logging.debug("No cache file was found, but caching was ignored anyway")
 
     # Open cache file and start downloading
     with open(cache, 'a+') as cache_file_handle:
