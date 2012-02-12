@@ -8,7 +8,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Automatic torrent file download
-# Description:       A sercive to automatically download torrent files from an RSS feed based on regular expressions
+# Description:       A service to automatically download torrent files from an RSS feed based on regular expressions
 ### END INIT INFO
 
 # Author: Peter Asplund <peter.azp@gmail.com>
@@ -25,6 +25,8 @@ unset USER
 # Setup variables
 NAME=rsstorrent
 DESC="Torrent downloading script"
+EXEC=python
+SCRIPT=${NAME}.py
 DAEMON=/usr/bin/${NAME}.py
 PIDFILE=/var/run/${NAME}/${NAME}.pid
 LOGFILE=/var/log/${NAME}/${NAME}.log
@@ -101,10 +103,10 @@ do_start() {
 			chown ${RSSTORRENT_USER}:${GROUP} ${logdir} || return 2
 		fi
 
-        start-stop-daemon --background --start --chuid ${RSSTORRENT_USER}:${GROUP} --name ${NAME} \
-			--make-pidfile --pidfile ${PIDFILE} --exec $DAEMON --test > /dev/null || return 1
-        start-stop-daemon --background --start --chuid ${RSSTORRENT_USER}:${GROUP} --name ${NAME} \
-			--make-pidfile --pidfile ${PIDFILE} --exec $DAEMON -- --logfile ${LOGFILE} || return 2
+        start-stop-daemon --start --chuid ${RSSTORRENT_USER}:${GROUP} \
+			--exec $DAEMON --test > /dev/null || return 1
+        start-stop-daemon --start --chuid ${RSSTORRENT_USER}:${GROUP} \
+			--exec $DAEMON -- -v --daemon --pidfile ${PIDFILE} --logfile ${LOGFILE} || return 2
 }
 
 do_stop() {
@@ -113,15 +115,13 @@ do_stop() {
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --name ${EXEC} ${SCRIPT}
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
 	# Wait for children to finish too if this is a daemon that forks
 	# and if the daemon is only ever run from this initscript.
-	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --name ${EXEC} ${SCRIPT}
 	[ "$?" = 2 ] && return 2
-	# Many daemons don't delete their pidfiles when they exit.
-	rm -rf $PIDFILE
 	return "$RETVAL"
 }
 
@@ -178,3 +178,4 @@ case "$1" in
 	exit 3
 	;;
 esac
+

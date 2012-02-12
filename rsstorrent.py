@@ -294,31 +294,37 @@ def do_main_program():
     # Parse command line commands
     parser = OptionParser()
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
-                    help="Verbose logging", default=False)
+            help="Verbose logging", default=False)
     parser.add_option("-d", "--debug", action="store_true", dest="debug",
-                    help="Print debug information to console", default=False)
+            help="Print debug information to console", default=False)
     parser.add_option("-D", "--daemon", action="store_true", dest="daemon",
-                    help="Run as daemon", default=False)
+            help="Run as daemon", default=False)
+    parser.add_option("-x", "--stop", action="store_true", dest="stop",
+            help="Stop running daemon", default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
-                    help="write log to FILE", metavar="FILE")
+            help="Write log to FILE", metavar="FILE")
     parser.add_option("-p", "--pidfile", dest="pid_file",
-                    help="set pidfile to FILE", metavar="FILE",
-                    default='/var/run/rsstorrent/rsstorrent.pid')
-    parser.add_option("--cc", "--cache-clear", action="store_true", dest="cache_clear",
-                    help="clear the cache file", default=False)
-    parser.add_option("--ci", "--cache-ignore", action="store_true", dest="cache_ignore",
-                    help="work the cache just as normal, except download all files anyway", default=False)
+            help="Set pidfile to FILE", metavar="FILE",
+            default='/var/run/rsstorrent/rsstorrent.pid')
+    parser.add_option("--cc", "--cache-clear", action="store_true",
+            dest="cache_clear", help="Clear the cache file", default=False)
+    parser.add_option("--ci", "--cache-ignore", action="store_true",
+            dest="cache_ignore",
+            help="Ignore the cache and download all files again", default=False)
     parser.add_option("--nd", "--no-downloads", action="store_true", dest="no_downloads",
-                    help="perform a dry run, iaw: don't actually download the files", default=False)
+            help="Don't actually download the files", default=False)
     (options, args) = parser.parse_args()
 
     if args:
-        logging.warning("Required variables not supplied")
+        print("Required variables not supplied.")
+        exit(-1)
 
     env = Environment()
     log_file_path = setup_logging(env, options)
 
-    # Read config file, if it can't find it, create one
+    logging.info("Starting rsstorrent...")
+
+    # Read config file, if it can't find it, copy it from current folder
     if not os.path.exists(env.config_file_path):
 	    create_config_file(env.config_dir_path + env.config_file)
 	    logging.warning("There was no config file found, I just created one.")
@@ -354,6 +360,13 @@ def do_main_program():
     
     if options.daemon:
         # Set up some Daemon stuff
+        try:
+            open(options.pid_file+'.lock', 'r')
+            logging.info("pid-file exists, exiting")
+            exit(-1)
+        except IOError:
+            pass
+
         context = daemon.DaemonContext(
                 umask=0o002,
                 pidfile=lockfile.FileLock(options.pid_file),
@@ -362,21 +375,38 @@ def do_main_program():
                 signal.SIGTERM: cleanup_program,
                 signal.SIGHUP: 'terminate',
                 }
+
+        if options.stop:
+            logging.info("Caught stop signal")
+            logging.info("Context started: " + str(context.is_open))
+            if context.is_open:
+                context.close()
+            else:
+                logging.info("No context with that pid open")
+            exit(0);
+
         # Open all important files and list them
         cache_file_handle = open(env.cache_file_path, 'a+') 
         config_file_handle = open(env.config_file_path, 'a+') 
         if log_file_path:
-            log_file_handle = open(log_file_path, 'w+') 
-            context.file_preserve = [cache_file_handle, config_file_handle,
+            log_file_handle = logging.root.handlers[0].stream.fileno()
+            logging.debug("Adding logging handle to files_preserve: " + log_file_path)
+            context.files_preserve = [cache_file_handle,
+                    config_file_handle,
                     log_file_handle]
         else:
-            context.file_preserve = [cache_file_handle, config_file_handle]
+            context.files_preserve = [cache_file_handle, config_file_handle]
 
+        logging.debug("Entering daemon context")
         with context:
-            logging.info("Entering daemon context")
+            logging.debug("Entered daemon context")
             main_loop(env, sites, options)
+        logging.debug("Exited daemon context")
     else:
         main_loop(env, sites, options)
+    logging.info("Stopping rsstorrent...")
+    logging.info("Exting.")
+
 
 def main_loop(env, sites, options):
     """ Main program loop """
@@ -414,6 +444,7 @@ def main_loop(env, sites, options):
                 child.isAlive = False
                 break
         time.sleep(60)
+
 
 
 try:
