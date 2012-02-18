@@ -31,7 +31,7 @@ global Running;
 global children;
 
 class Child:
-
+    """ Child process """
     pid = ""
     isAlive = False
 
@@ -94,13 +94,31 @@ class Site:
         logging.debug("Login url: " + self.login_url)
         logging.debug("Keys: " + str(self.keys))
         logging.debug("Interval: " + str(self.time_interval))
-        # spacer for easy reading
-        logging.debug(".")
+        logging.debug("---------------------")
 
 def create_config_file(cfg_file):
     with open(cfg_file, 'w+') as cfg_file_handle:
         # Split the file by lines to get rid of whitespace
-	lines = ["[General]\n", "# Directory which to download torrents to\n", "download_dir = /home/username/Downloads/\n", "\n", "[Site1]\n", "# Interval between checks in minutes\n", "interval = 7\n", "\n", "# URL to rss feed\n", "rss_url = http://www.urltosite.com\n", "\n", "# URL to site login page/script\n", "login_url = http://www.urltosite.com/takelogin.php\n", "\n", "# Search keys for the parsing\n", "keys = keys*to*search*for separated*by spaces\n", "\n", "# Username and Password to torrent site\n", "username = username\n", "password = password\n"]
+        lines = ["[General]\n",
+            "# Directory which to download torrents to\n",
+            "download_dir = /home/username/Downloads/\n",
+            "\n",
+            "[Site1]\n",
+            "# Interval between checks in minutes\n",
+            "interval = 7\n",
+            "\n",
+            "# URL to rss feed\n",
+            "rss_url = http://www.urltosite.com\n",
+            "\n",
+            "# URL to site login page/script\n",
+            "login_url = http://www.urltosite.com/takelogin.php\n",
+            "\n",
+            "# Search keys for the parsing\n",
+            "keys = keys*to*search*for separated*by spaces\n",
+            "\n",
+            "# Username and Password to torrent site\n",
+            "username = username\n",
+            "password = password\n"]
         for line in lines:
             cfg_file_handle.writelines(line)
 
@@ -249,7 +267,7 @@ def setup_logging(env, options):
     log_file=''
     # Logging format for logfile and console messages
     formatting = '%(asctime)s (%(process)d) %(levelname)s: %(message)s'
-    
+
     # set log filepath
     if options.log_file:
         log_file = options.log_file
@@ -326,10 +344,10 @@ def do_main_program():
 
     # Read config file, if it can't find it, copy it from current folder
     if not os.path.exists(env.config_file_path):
-	    create_config_file(env.config_dir_path + env.config_file)
-	    logging.warning("There was no config file found, I just created one.")
-	    logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
-	    exit(-1)
+        create_config_file(env.config_dir_path + env.config_file)
+        logging.warning("There was no config file found, I just created one.")
+        logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
+        exit(-1)
 
     sites = []
     config_success = read_config_file(env.config_file_path,
@@ -357,7 +375,7 @@ def do_main_program():
         for site in sites:
             site.print_debug()
 
-    
+
     if options.daemon:
         # Set up some Daemon stuff
         try:
@@ -386,8 +404,8 @@ def do_main_program():
             exit(0);
 
         # Open all important files and list them
-        cache_file_handle = open(env.cache_file_path, 'a+') 
-        config_file_handle = open(env.config_file_path, 'a+') 
+        cache_file_handle = open(env.cache_file_path, 'a+')
+        config_file_handle = open(env.config_file_path, 'a+')
         if log_file_path:
             log_file_handle = logging.root.handlers[0].stream.fileno()
             logging.debug("Adding logging handle to files_preserve: " + log_file_path)
