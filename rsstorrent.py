@@ -5,7 +5,7 @@
 
 __author__ = "Peter Asplund"
 __copyright__ = "Copyleft 2011"
-__credits__ = ["None"]
+__credits__ = ["ikkemaniac"]
 __license__ = "GPL"
 __version__ = "0.4"
 __maintainer__ = "Peter Asplund"
