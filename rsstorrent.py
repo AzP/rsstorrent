@@ -221,7 +221,8 @@ def process_download_list(cache, download_dir, input_list, options):
             logging.error("Can't find cache directory")
             return
         else:
-            logging.debug("No cache file was found, but caching was ignored anyway")
+            logging.debug("No cache file was found,
+                    but caching was ignored anyway")
 
     # Open cache file and start downloading
     with open(cache, 'a+') as cache_file_handle:
@@ -232,7 +233,8 @@ def process_download_list(cache, download_dir, input_list, options):
             logging.debug("Processing: " + input_line)
 
             if len(filename) < 1:
-                logging.critical("I was not able to find you a filename! The file cannot be saved!")
+                logging.critical("I was not able to find you a filename! The
+                        file cannot be saved!")
                 continue
 
             if (filename in cached_files) and not options.cache_ignore:
@@ -281,13 +283,17 @@ def setup_logging(env, options):
         log_file = os.path.join(env.config_dir_path + "rsstorrent.log")
 
     # IMPORTANT!
-    # It is important to define the basic file logging before the console logging
+    # It is important to define the basic file
+    # logging before the console logging
     if options.debug:
-        logging.basicConfig(filename=log_file, format=formatting, level=logging.DEBUG)
+        logging.basicConfig(filename=log_file, format=formatting,
+                level=logging.DEBUG)
     elif options.verbose:
-        logging.basicConfig(filename=log_file, format=formatting, level=logging.INFO)
+        logging.basicConfig(filename=log_file, format=formatting,
+                level=logging.INFO)
     else:
-        logging.basicConfig(filename=log_file, format=formatting, level=logging.CRITICAL)
+        logging.basicConfig(filename=log_file, format=formatting,
+                level=logging.CRITICAL)
 
     # Always print messages to the console
     # In normal operating mode only CRITICAL messages will be displayed
@@ -334,8 +340,10 @@ def do_main_program():
             dest="cache_clear", help="Clear the cache file", default=False)
     parser.add_option("--ci", "--cache-ignore", action="store_true",
             dest="cache_ignore",
-            help="Ignore the cache and download all files again", default=False)
-    parser.add_option("--nd", "--no-downloads", action="store_true", dest="no_downloads",
+            help="Ignore the cache and download all files again",
+            default=False)
+    parser.add_option("--nd", "--no-downloads", action="store_true",
+            dest="no_downloads",
             help="Don't actually download the files", default=False)
     (options, args) = parser.parse_args()
 
@@ -352,7 +360,8 @@ def do_main_program():
     if not os.path.exists(env.config_file_path):
         create_config_file(env.config_dir_path + env.config_file)
         logging.warning("There was no config file found, I just created one.")
-        logging.critical("Please check " + env.config_dir_path + env.config_file + " before restarting!")
+        logging.critical("Please check " + env.config_dir_path +
+                env.config_file + " before restarting!")
         exit(-1)
 
     sites = []
@@ -413,7 +422,8 @@ def do_main_program():
         config_file_handle = open(env.config_file_path, 'a+')
         if log_file_path:
             log_file_handle = logging.root.handlers[0].stream.fileno()
-            logging.debug("Adding logging handle to files_preserve: " + log_file_path)
+            logging.debug("Adding logging handle to files_preserve: "
+                    + log_file_path)
             context.files_preserve = [cache_file_handle,
                     config_file_handle,
                     log_file_handle]
@@ -450,9 +460,11 @@ def main_loop(env, sites, options):
         else:
             while(Running):
                 # in child process
-                download_list = update_list_from_feed(site.feed_url, site.regexp_keys)
+                download_list = update_list_from_feed(site.feed_url,
+                        site.regexp_keys)
                 if len(download_list):
-                    logging.debug("Start downloading, I found " + str(len(download_list)) + " items.")
+                    logg ing.debug("Start downloading, I found " +
+                            str(len(download_list)) + " items.")
                     process_download_list(env.cache_file_path,
                             env.download_dir, download_list, options)
                 time.sleep(site.time_interval)
