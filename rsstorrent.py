@@ -23,21 +23,27 @@ import cookielib
 import time
 import re
 import logging
-import shutil
 import ConfigParser
 from optparse import OptionParser
 
-global Running
-global children
+RUNNING = True
 
 
 class Child:
     """ Child process """
+    child_id = ""
     pid = ""
-    isAlive = False
+    is_alive = False
 
-    def __init__(self):
-        self.isAlive = True
+    def __init__(self, child_id):
+        self.child_id = child_id
+        self.is_alive = True
+
+    def print_debug(self):
+        """ Dump all local variables """
+        logging.debug("Child:" + self.child_id)
+        logging.debug("Pid:" + self.pid)
+        logging.debug("Is Alive: " + self.is_alive)
 
 
 class Environment:
@@ -90,6 +96,9 @@ class Site:
     username = ""
     password = ""
 
+    def __init__(self):
+        return
+
     def print_debug(self):
         """ Dump all local variables """
         logging.debug("Site: ")
@@ -101,6 +110,7 @@ class Site:
 
 
 def create_config_file(cfg_file):
+    """ Generate an empty config file """
     with open(cfg_file, 'w+') as cfg_file_handle:
         # Split the file by lines to get rid of whitespace
         lines = ["[General]\n",
@@ -155,12 +165,10 @@ def read_config_file(cfg_file, sites, env):
             site.password = config.get(section, "password")
             # Add to array of sites
             sites.append(site)
-
     # safety check
     if len(sites) < 1:
-        return False
-
-    return True
+        logging.critical("Can't read config file")
+        exit(-1)
 
 
 def site_login(site):
@@ -221,8 +229,9 @@ def process_download_list(cache, download_dir, input_list, options):
             logging.error("Can't find cache directory")
             return
         else:
-            logging.debug("No cache file was found,
-                    but caching was ignored anyway")
+            logging.debug(
+            "No cache file was found, but caching was ignored anyway"
+            )
 
     # Open cache file and start downloading
     with open(cache, 'a+') as cache_file_handle:
@@ -233,8 +242,8 @@ def process_download_list(cache, download_dir, input_list, options):
             logging.debug("Processing: " + input_line)
 
             if len(filename) < 1:
-                logging.critical("I was not able to find you a filename! The
-                        file cannot be saved!")
+                logging.critical("I was not able to find you a filename!\
+                The file cannot be saved!")
                 continue
 
             if (filename in cached_files) and not options.cache_ignore:
@@ -313,14 +322,14 @@ def setup_logging(env, options):
 
 
 def cleanup_program():
-    """ Set Running to false so program loop exits. """
-    global Running
-    Running = False
-    logging.info("Running set to False")
+    """ Set RUNNING to false so program loop exits. """
+    global RUNNING
+    RUNNING = False
+    logging.info("RUNNING set to False")
 
 
-def do_main_program():
-    """ Main function. """
+def parse_options():
+    """ Parse command line options """
     # Parse command line commands
     parser = OptionParser()
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
@@ -351,12 +360,29 @@ def do_main_program():
         print("Required variables not supplied.")
         exit(-1)
 
+    return options
+
+
+def check_output_files(env, options):
+    """ Check sanity of output directory and handle cache cleans """
+    if options.cache_clear:
+        # clear cache file
+        open(env.cache_file_path, 'w').close()
+        logging.info("Cleared cache")
+        exit(0)
+    if not os.path.exists(env.download_dir):
+        os.mkdir(env.download_dir, 0o755)
+
+
+def do_main_program():
+    """ Main function. """
+    options = parse_options()
     env = Environment()
     log_file_path = setup_logging(env, options)
 
     logging.info("Starting rsstorrent...")
 
-    # Read config file, if it can't find it, copy it from current folder
+    # Read config file, if it can't find it, create it
     if not os.path.exists(env.config_file_path):
         create_config_file(env.config_dir_path + env.config_file)
         logging.warning("There was no config file found, I just created one.")
@@ -365,21 +391,8 @@ def do_main_program():
         exit(-1)
 
     sites = []
-    config_success = read_config_file(env.config_file_path,
-                                    sites, env)
-
-    if not config_success:
-        logging.critical("Can't read config file")
-        exit(-1)
-
-    if options.cache_clear:
-        # clear cache file
-        open(env.cache_file_path, 'w').close()
-        logging.info("Cleared cache")
-        exit(0)
-
-    if not os.path.exists(env.download_dir):
-        os.mkdir(env.download_dir, 0o755)
+    read_config_file(env.config_file_path, sites, env)
+    check_output_files(env, options)
     convert_keys_to_regexps(sites)
     site_login(sites)
 
@@ -443,39 +456,40 @@ def do_main_program():
 
 def main_loop(env, sites, options):
     """ Main program loop """
-    global Running
-    Running = True
-    global children
+    global RUNNING
+    RUNNING = True
     children = []
+    num_children = 0
     # Main loop
     for site in sites:
+        num_children += 1
         child = os.fork()
         logging.debug("Working: " + site.feed_url)
         if child:
             # still in the parent process
             logging.debug("Create child proces for: " + site.feed_url)
-            ctmp = Child()
+            ctmp = Child(num_children)
             ctmp.pid = child
             children.append(ctmp)
         else:
-            while(Running):
+            while(RUNNING):
                 # in child process
                 download_list = update_list_from_feed(site.feed_url,
                         site.regexp_keys)
                 if len(download_list):
-                    logg ing.debug("Start downloading, I found " +
+                    logging.debug("Start downloading, I found " +
                             str(len(download_list)) + " items.")
                     process_download_list(env.cache_file_path,
                             env.download_dir, download_list, options)
                 time.sleep(site.time_interval)
             exit(0)
 
-    while(Running):
+    while(RUNNING):
         logging.debug("Looking into children...")
         for child in children:
             (pid, status) = os.waitpid(child.pid, os.WNOHANG)
             if pid < 0:
-                child.isAlive = False
+                child.is_alive = False
                 break
         time.sleep(60)
 
