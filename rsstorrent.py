@@ -27,8 +27,9 @@ import shutil
 import ConfigParser
 from optparse import OptionParser
 
-global Running;
-global children;
+global Running
+global children
+
 
 class Child:
     """ Child process """
@@ -37,6 +38,7 @@ class Child:
 
     def __init__(self):
         self.isAlive = True
+
 
 class Environment:
     """ Keeps track of all files and directories """
@@ -77,6 +79,7 @@ class Environment:
         logging.debug("Cache file path: " + self.cache_file_path)
         logging.debug("Download dir path: " + self.download_dir)
 
+
 class Site:
     """ Represents a monitored site """
     feed_url = ""
@@ -95,6 +98,7 @@ class Site:
         logging.debug("Keys: " + str(self.keys))
         logging.debug("Interval: " + str(self.time_interval))
         logging.debug("---------------------")
+
 
 def create_config_file(cfg_file):
     with open(cfg_file, 'w+') as cfg_file_handle:
@@ -121,6 +125,7 @@ def create_config_file(cfg_file):
             "password = password\n"]
         for line in lines:
             cfg_file_handle.writelines(line)
+
 
 def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
@@ -163,20 +168,20 @@ def site_login(site):
     cookie_jar = cookielib.CookieJar()
 
     # build opener with HTTPCookieProcessor
-    opener = urllib2.build_opener( urllib2.HTTPCookieProcessor(cookie_jar) )
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie_jar))
     opener.addheaders.append(('User-agent',
         ('Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1)'
-        'Gecko/20110524 Firefox/4.0.1') ))
-    urllib2.install_opener( opener )
+        'Gecko/20110524 Firefox/4.0.1')))
+    urllib2.install_opener(opener)
 
     # assuming the site expects 'user' and 'pass' as query params
-    login_query = urllib.urlencode( { 'username': site.username,
-        'password': site.password, 'login' : 'Log in!' } )
+    login_query = urllib.urlencode({'username': site.username,
+        'password': site.password, 'login': 'Log in!'})
 
     # perform login with params
     try:
-        file_handle = opener.open( site.login_url,
-                            login_query )
+        file_handle = opener.open(site.login_url,
+                            login_query)
         file_handle.close()
     except urllib2.HTTPError, exception:
         logging.error("HTTP Error: " + exception.code +
@@ -262,9 +267,10 @@ def convert_keys_to_regexps(sites):
         for key in site.keys:
             site.regexp_keys.append(re.compile(key, re.IGNORECASE))
 
+
 def setup_logging(env, options):
     """ Setup logging to file or tty. """
-    log_file=''
+    log_file = ''
     # Logging format for logfile and console messages
     formatting = '%(asctime)s (%(process)d) %(levelname)s: %(message)s'
 
@@ -302,8 +308,8 @@ def setup_logging(env, options):
 
 def cleanup_program():
     """ Set Running to false so program loop exits. """
-    global Running;
-    Running=False;
+    global Running
+    Running = False
     logging.info("Running set to False")
 
 
@@ -375,11 +381,10 @@ def do_main_program():
         for site in sites:
             site.print_debug()
 
-
     if options.daemon:
         # Set up some Daemon stuff
         try:
-            open(options.pid_file+'.lock', 'r')
+            open(options.pid_file + '.lock', 'r')
             logging.info("pid-file exists, exiting")
             exit(-1)
         except IOError:
@@ -401,7 +406,7 @@ def do_main_program():
                 context.close()
             else:
                 logging.info("No context with that pid open")
-            exit(0);
+            exit(0)
 
         # Open all important files and list them
         cache_file_handle = open(env.cache_file_path, 'a+')
@@ -428,9 +433,9 @@ def do_main_program():
 
 def main_loop(env, sites, options):
     """ Main program loop """
-    global Running;
-    Running = True;
-    global children;
+    global Running
+    Running = True
+    global children
     children = []
     # Main loop
     for site in sites:
@@ -453,7 +458,6 @@ def main_loop(env, sites, options):
                 time.sleep(site.time_interval)
             exit(0)
 
-
     while(Running):
         logging.debug("Looking into children...")
         for child in children:
@@ -464,7 +468,6 @@ def main_loop(env, sites, options):
         time.sleep(60)
 
 
-
 try:
     if __name__ == "__main__":
         do_main_program()
@@ -473,4 +476,3 @@ try:
 except KeyboardInterrupt:
     logging.critical("\n")
     logging.critical("Keyboard Interrupted!")
-
