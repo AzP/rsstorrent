@@ -110,7 +110,7 @@ class Site:
 
 
 def create_config_file(cfg_file):
-    """ Generate an empty config file """
+    "("" Generate an empty config file """
     with open(cfg_file, 'w+') as cfg_file_handle:
         # Split the file by lines to get rid of whitespace
         lines = ["[General]\n",
@@ -119,7 +119,7 @@ def create_config_file(cfg_file):
             "\n",
             "[Site1]\n",
             "# Interval between checks in minutes\n",
-            "interval = 7\n",
+            "interval = 30\n",
             "\n",
             "# URL to rss feed\n",
             "rss_url = http://www.urltosite.com\n",
@@ -238,8 +238,15 @@ def process_download_list(cache, download_dir, input_list, options):
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
         for input_line in input_list:
+            # For what site?
+            # Index -1 returns last position
             filename = input_line.split("/")[-1]
+            # For torrentbytes
+            if len(input_line.partition("name=")[2]):
+                filename = input_line.partition("name=")[2]
+
             logging.debug("Processing: " + input_line)
+            logging.debug("Filename resolved to: " + filename)
 
             if len(filename) < 1:
                 logging.critical("I was not able to find you a filename!\
