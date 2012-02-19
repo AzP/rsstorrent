@@ -347,7 +347,8 @@ def parse_cmd_arguments():
     parser.add_option("-D", "--daemon", action="store_true", dest="daemon",
             help="Run as daemon", default=False)
     parser.add_option("-x", "--stop", action="store_true", dest="stop",
-            help="Stop running daemon (does not work currentl)", default=False)
+            help="Stop running daemon (does not work currently)",
+            default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
             help="Write log to FILE", metavar="FILE")
     parser.add_option("-p", "--pidfile", dest="pid_file",
@@ -412,6 +413,7 @@ def do_main_program():
         for site in sites:
             site.print_debug()
 
+    # Start the program (either in or without daemon mode)
     if options.daemon:
         context = initiate_daemon(options, env, log_file_path)
         logging.debug("Entering daemon context")
@@ -425,16 +427,9 @@ def do_main_program():
     logging.info("Exting.")
 
 
-def initiate_daemon(options, env, log_file_path):
+def initiate_daemon(options, env, log_file_path, logging):
     """ Set up daemon context and return it """
     # Set up some Daemon stuff
-    try:
-        open(options.pid_file + '.lock', 'r')
-        logging.info("pid-file exists, exiting")
-        exit(-1)
-    except IOError:
-        pass
-
     context = daemon.DaemonContext(
             umask=0o002,
             pidfile=lockfile.FileLock(options.pid_file),
@@ -453,6 +448,15 @@ def initiate_daemon(options, env, log_file_path):
             logging.info("No context with that pid open")
         exit(0)
 
+    # Check if the daemon is already running
+    # or at least if it has left a pid file behind
+    try:
+        open(options.pid_file + '.lock', 'r')
+        logging.info("pid-file exists, exiting")
+        exit(-1)
+    except IOError:
+        pass
+
     # Open all important files and list them
     cache_file_handle = open(env.cache_file_path, 'a+')
     config_file_handle = open(env.config_file_path, 'a+')
@@ -465,7 +469,6 @@ def initiate_daemon(options, env, log_file_path):
                 log_file_handle]
     else:
         context.files_preserve = [cache_file_handle, config_file_handle]
-
     return context
 
 
