@@ -411,45 +411,7 @@ def do_main_program():
             site.print_debug()
 
     if options.daemon:
-        # Set up some Daemon stuff
-        try:
-            open(options.pid_file + '.lock', 'r')
-            logging.info("pid-file exists, exiting")
-            exit(-1)
-        except IOError:
-            pass
-
-        context = daemon.DaemonContext(
-                umask=0o002,
-                pidfile=lockfile.FileLock(options.pid_file),
-                )
-        context.signal_map = {
-                signal.SIGTERM: cleanup_program,
-                signal.SIGHUP: 'terminate',
-                }
-
-        if options.stop:
-            logging.info("Caught stop signal")
-            logging.info("Context started: " + str(context.is_open))
-            if context.is_open:
-                context.close()
-            else:
-                logging.info("No context with that pid open")
-            exit(0)
-
-        # Open all important files and list them
-        cache_file_handle = open(env.cache_file_path, 'a+')
-        config_file_handle = open(env.config_file_path, 'a+')
-        if log_file_path:
-            log_file_handle = logging.root.handlers[0].stream.fileno()
-            logging.debug("Adding logging handle to files_preserve: "
-                    + log_file_path)
-            context.files_preserve = [cache_file_handle,
-                    config_file_handle,
-                    log_file_handle]
-        else:
-            context.files_preserve = [cache_file_handle, config_file_handle]
-
+        context = initiate_daemon(options, env, log_file_path)
         logging.debug("Entering daemon context")
         with context:
             logging.debug("Entered daemon context")
@@ -459,6 +421,50 @@ def do_main_program():
         main_loop(env, sites, options)
     logging.info("Stopping rsstorrent...")
     logging.info("Exting.")
+
+
+def initiate_daemon(options, env, log_file_path):
+    """ Set up daemon context and return it """
+    # Set up some Daemon stuff
+    try:
+        open(options.pid_file + '.lock', 'r')
+        logging.info("pid-file exists, exiting")
+        exit(-1)
+    except IOError:
+        pass
+
+    context = daemon.DaemonContext(
+            umask=0o002,
+            pidfile=lockfile.FileLock(options.pid_file),
+            )
+    context.signal_map = {
+            signal.SIGTERM: cleanup_program,
+            signal.SIGHUP: 'terminate',
+            }
+
+    if options.stop:
+        logging.info("Caught stop signal")
+        logging.info("Context started: " + str(context.is_open))
+        if context.is_open:
+            context.close()
+        else:
+            logging.info("No context with that pid open")
+        exit(0)
+
+    # Open all important files and list them
+    cache_file_handle = open(env.cache_file_path, 'a+')
+    config_file_handle = open(env.config_file_path, 'a+')
+    if log_file_path:
+        log_file_handle = logging.root.handlers[0].stream.fileno()
+        logging.debug("Adding logging handle to files_preserve: "
+                + log_file_path)
+        context.files_preserve = [cache_file_handle,
+                config_file_handle,
+                log_file_handle]
+    else:
+        context.files_preserve = [cache_file_handle, config_file_handle]
+
+    return context
 
 
 def main_loop(env, sites, options):
