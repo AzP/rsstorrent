@@ -36,6 +36,7 @@ class Child:
     is_alive = False
 
     def __init__(self, child_id):
+        logging.debug("Created child number:" + str(child_id))
         self.child_id = child_id
         self.is_alive = True
 
@@ -105,7 +106,7 @@ class Site:
         logging.debug("Feed url: " + self.feed_url)
         logging.debug("Login url: " + self.login_url)
         logging.debug("Keys: " + str(self.keys))
-        logging.debug("Interval: " + str(self.time_interval))
+        logging.debug("Interval (in seconds): " + str(self.time_interval))
         logging.debug("---------------------")
 
 
@@ -335,8 +336,8 @@ def cleanup_program():
     logging.info("RUNNING set to False")
 
 
-def parse_options():
-    """ Parse command line options """
+def parse_cmd_arguments():
+    """ Parse command line arguments """
     # Parse command line commands
     parser = OptionParser()
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
@@ -346,7 +347,7 @@ def parse_options():
     parser.add_option("-D", "--daemon", action="store_true", dest="daemon",
             help="Run as daemon", default=False)
     parser.add_option("-x", "--stop", action="store_true", dest="stop",
-            help="Stop running daemon", default=False)
+            help="Stop running daemon (does not work currentl)", default=False)
     parser.add_option("-l", "--logfile", dest="log_file",
             help="Write log to FILE", metavar="FILE")
     parser.add_option("-p", "--pidfile", dest="pid_file",
@@ -383,7 +384,7 @@ def check_output_files(env, options):
 
 def do_main_program():
     """ Main function. """
-    options = parse_options()
+    options = parse_cmd_arguments()
     env = Environment()
     log_file_path = setup_logging(env, options)
 
@@ -401,7 +402,8 @@ def do_main_program():
     read_config_file(env.config_file_path, sites, env)
     check_output_files(env, options)
     convert_keys_to_regexps(sites)
-    site_login(sites)
+    for site in sites:
+        site_login(site)
 
     # Print verbose/debug output if enabled
     if options.verbose:
