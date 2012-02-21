@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ####
 #### This is a suggested pre-commit hook to be used with pep8.
-#### Make a symlink to this file as .git/hooks/pre-commit
+#### To use: copy this file to .git/hooks/pre-commit
 ####
 #### Credits go to Kevin McConnell
 #### http://tech.myemma.com/python-pep8-git-hooks/
