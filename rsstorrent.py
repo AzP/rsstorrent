@@ -160,8 +160,8 @@ def update_list_from_feed(url, regexp_keys):
     for key in regexp_keys:
         for item in feed["items"]:
             if key.search(item["title"]):
-                logging.info(item["title"] + " : " + item["link"])
-                found_items.append(item["link"])
+				logging.info("Found match: " + item["title"] + " : " + item["link"])
+				found_items.append(item["title"] : item["link"])
     logging.info("Updated Feed: " + feed['feed']['title'])
     return found_items
 
@@ -177,10 +177,12 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
     with open(cache, 'a+') as cache_file_handle:
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
-        for input_line in input_list:
-            filename = input_line.split("/")[-1]
-            filename = input_line.partition("name=")[2]
-            logging.info("Processing: " + input_line)
+        for title in input_list["title"]:
+            #filename = input_line.split("/")[-1]
+            #filename = input_line.partition("name=")[2]
+			filename = title + ".torrent"
+			http_url = input_list[title]
+            logging.info("Processing: " + title)
             if len(filename) < 1:
                 logging.critical("I was not able to find you a filename! The file cannot be saved!")
                 continue
@@ -188,16 +190,16 @@ def process_download_list(cache, download_dir, input_list, cache_ign):
             logging.info("Ignore cache: " + str(bool(cache_ign)))
 
             if (filename in cached_files) and not cache_ign:
-                logging.info("File already downloaded: " + input_line)
+                logging.info("File already downloaded: " + title)
                 continue
             logging.info("Downloading: " + filename)
             try:
-                request = urllib2.urlopen(input_line)
+				request = urllib2.urlopen(http_url)
             except urllib2.HTTPError, exception:
-                msg = "HTTP Error: " + exception.code + " Line:" + input_line
+				msg = "HTTP Error: " + exception.code + " Line:" + http_url
                 logging.info(msg)
 
-            if request.geturl() != input_line:
+			if request.geturl() != http_url:
                 logging.info("URL Redirect - Not allowed to download")
                 continue
 
