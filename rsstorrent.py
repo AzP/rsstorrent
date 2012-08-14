@@ -4,13 +4,13 @@
     downloads torrents to a specified folder."""
 
 __author__ = "Peter Asplund"
-__copyright__ = "Copyleft 2011"
+__copyright__ = "Copyleft 2012"
 __credits__ = ["ikkemaniac"]
 __license__ = "GPL"
 __version__ = "0.4"
 __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
-__status__ = "Beta"
+__status__ = "Stable"
 
 import os
 import daemon
@@ -202,7 +202,7 @@ def site_login(site):
 
 def update_list_from_feed(url, regexp_keys):
     """ Update the feed data from its url. """
-    found_items = []
+    found_items = {}
 
     # Get feed
     feed = feedparser.parse(url)
@@ -214,10 +214,11 @@ def update_list_from_feed(url, regexp_keys):
 
     # Loop through that list
     for key in regexp_keys:
-        for item in feed["items"]:
-            if key.search(item["title"]):
-                logging.debug("Found match: " + item["title"] + " : " + item["link"])
-                found_items.append(item["title"] : item["link"])
+        for item in feed['items']:
+            if key.search(item['title']):
+                logging.debug("Found match: " + item['title'] + " : " + item['link'])
+                found_items[item['title']] = item['link']
+                logging.debug("Added: " + found_items[item['title']])
     logging.debug("Updated Feed: " + feed['feed']['title'])
     return found_items
 
@@ -238,12 +239,7 @@ def process_download_list(cache, download_dir, input_list, options):
     with open(cache, 'a+') as cache_file_handle:
         # Split the file by lines to get rid of whitespace
         cached_files = cache_file_handle.read().splitlines()
-        for title in input_list["title"]:
-            # For what site?
-            # Index -1 returns last position
-            #filename = input_line.split("/")[-1]
-            # For torrentbytes
-            #filename = input_line.partition("name=")[2]
+        for title in input_list:
             filename = title + ".torrent"
             http_url = input_list[title]
             logging.debug("Processing: " + http_url)
@@ -254,7 +250,7 @@ def process_download_list(cache, download_dir, input_list, options):
                 continue
 
             if (filename in cached_files) and not options.cache_ignore:
-                logging.debug("File already downloaded: " + input_line)
+                logging.debug("File already downloaded: " + filename)
                 continue
             if options.no_downloads:
                 continue
@@ -272,6 +268,8 @@ def process_download_list(cache, download_dir, input_list, options):
 
             with open(os.path.join(download_dir, filename), 'w') as local_file:
                 local_file.write(request.read())
+
+            logging.info("Download successful: " + filename)
 
             # Cache the downloaded file so it doesn't get downloaded again
             cache_file_handle.writelines(filename + "\n")
@@ -480,10 +478,9 @@ def main_loop(env, sites, options):
     for site in sites:
         num_children += 1
         child = os.fork()
-        logging.debug("Working: " + site.feed_url)
         if child:
             # still in the parent process
-            logging.debug("Create child proces for: " + site.feed_url)
+            logging.debug("Create child process for: " + site.feed_url)
             ctmp = Child(num_children)
             ctmp.pid = child
             children.append(ctmp)
@@ -516,5 +513,4 @@ try:
 
 # catch keyboard exception
 except KeyboardInterrupt:
-    logging.critical("\n")
     logging.critical("Keyboard Interrupted!")
