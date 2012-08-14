@@ -411,7 +411,7 @@ def do_main_program():
 
     # Start the program (either in or without daemon mode)
     if options.daemon:
-        context = initiate_daemon(options, env, log_file_path)
+        context = initiate_daemon(options, env, log_file_path, logging)
         logging.debug("Entering daemon context")
         with context:
             logging.debug("Entered daemon context")
