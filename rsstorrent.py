@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 
 """RssTorrent.py: Monitors an RSS-feed and automatically
     downloads torrents to a specified folder."""
