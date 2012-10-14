@@ -17,7 +17,7 @@ with open('README.md') as readme:
         author_email='peterasplund@gentoo.se',
         url='https://github.com/AzP/rsstorrent',
         classifiers=[
-            'Development Status :: 5 - Stable',
+            'Development Status :: 5 - Production/Stable',
             'Environment :: Console',
             'Intended Audience :: End Users/Desktop',
             'License :: OSI Approved :: GPL-3 License',
@@ -25,8 +25,8 @@ with open('README.md') as readme:
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
         ],
-        py_modules = ['rsstorrent']
+        py_modules = ['rsstorrent'],
         keywords='automation, p2p, network',
-        install_requires=['feedparser'],
+        install_requires=['daemon', 'feedparser'],
         entry_points={'console_scripts': ['rsstorrent = rsstorrent:main']},
     )
