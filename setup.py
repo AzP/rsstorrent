@@ -25,6 +25,7 @@ with open('README.md') as readme:
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
         ],
+        py_modules = ['rsstorrent']
         keywords='automation, p2p, network',
         install_requires=['feedparser'],
         entry_points={'console_scripts': ['rsstorrent = rsstorrent:main']},
