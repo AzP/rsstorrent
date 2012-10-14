@@ -3,22 +3,14 @@
 """Setup for rsstorrent."""
 
 from setuptools import setup
-
-def version():
-    """Return version string."""
-    with open('rsstorrent.py') as input_file:
-        for line in input_file:
-            if line.startswith('__version__'):
-                import ast
-                return ast.literal_eval(line.split('=')[1].strip())
-
+from rsstorrent import __version__
 
 with open('README.md') as readme:
     setup(
         name='rsstorrent',
-        version=version(),
-        description="""Monitors an RSS-feed and automatically
-                       downloads torrents to a specified folder."""
+        version=__version__,
+        description='Monitors an RSS-feed and automatically '
+                    'downloads torrents to a specified folder.',
         long_description=readme.read(),
         license='GPL-3',
         author='Peter Asplund',
@@ -27,12 +19,11 @@ with open('README.md') as readme:
         classifiers=[
             'Development Status :: 5 - Stable',
             'Environment :: Console',
-            'Intended Audience :: Users',
-            'License :: OSI Approved :: MIT License',
+            'Intended Audience :: End Users/Desktop',
+            'License :: OSI Approved :: GPL-3 License',
             'Operating System :: OS Independent',
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
-            'Programming Language :: Unix Shell',
         ],
         keywords='automation, p2p, network',
         install_requires=['daemon', 'feedparser'],
