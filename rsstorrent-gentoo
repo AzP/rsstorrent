@@ -13,7 +13,7 @@ depend() {
 
 # Setup variables
 NAME=rsstorrent
-DAEMON=/usr/bin/${NAME}.py
+DAEMON=/usr/bin/${NAME}
 PIDFILE=/var/run/${NAME}/${NAME}.pid
 LOGFILE=/var/log/${NAME}/${NAME}.log
 
