@@ -432,7 +432,8 @@ def initiate_daemon(options, env, log_file_path, logging):
             )
     context.signal_map = {
             signal.SIGTERM: cleanup_program,
-            signal.SIGHUP: 'terminate',
+            signal.SIGUSR1: cleanup_program,
+            signal.SIGHUP: cleanup_program
             }
 
     if options.stop:
@@ -505,6 +506,23 @@ def main_loop(env, sites, options):
                 child.is_alive = False
                 break
         time.sleep(60)
+    # Kill children and exit
+    for child in children:
+        terminate_process(child.pid)
+    exit(0)
+
+
+def terminate_process(pid):
+    # all this shit is because we are stuck with Python 2.5
+    # and we cannot use Popen.terminate()
+    if sys.platform == 'win32':
+        import ctypes
+        PROCESS_TERMINATE = 1
+        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
+        ctypes.windll.kernel32.TerminateProcess(handle, -1)
+        ctypes.windll.kernel32.CloseHandle(handle)
+    else:
+        os.kill(pid, signal.SIGKILL)
 
 
 try:
