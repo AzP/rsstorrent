@@ -35,9 +35,11 @@ class Child:
     pid = ""
     is_alive = False
 
-    def __init__(self, child_id):
-        logging.debug("Created child number:" + str(child_id))
+    def __init__(self, child_id, pid):
+        logging.debug("Created child number:\t" + str(child_id))
+        logging.debug("\twith pid:\t\t" + str(pid))
         self.child_id = child_id
+        self.pid = pid
         self.is_alive = True
 
     def print_debug(self):
@@ -216,7 +218,8 @@ def update_list_from_feed(url, regexp_keys):
     for key in regexp_keys:
         for item in feed['items']:
             if key.search(item['title']):
-                logging.debug("Found match: " + item['title'] + " : " + item['link'])
+                logging.debug("Found match: " + item['title'])
+                logging.debug("\t" + item['link'])
                 found_items[item['title']] = item['link']
                 logging.debug("Added: " + found_items[item['title']])
     logging.debug("Updated Feed: " + feed['feed']['title'])
@@ -411,7 +414,7 @@ def do_main_program():
 
     # Start the program (either in or without daemon mode)
     if options.daemon:
-        context = initiate_daemon(options, env, log_file_path, logging)
+        context = initiate_daemon(options, env, log_file_path)
         logging.debug("Entering daemon context")
         with context:
             logging.debug("Entered daemon context")
@@ -423,8 +426,9 @@ def do_main_program():
     logging.info("Exting.")
 
 
-def initiate_daemon(options, env, log_file_path, logging):
+def initiate_daemon(options, env, log_file_path):
     """ Set up daemon context and return it """
+    logging.debug("Setting up daemon with pid file: " + str(options.pid_file))
     # Set up some Daemon stuff
     context = daemon.DaemonContext(
             umask=0o002,
@@ -436,8 +440,16 @@ def initiate_daemon(options, env, log_file_path, logging):
             signal.SIGHUP: cleanup_program
             }
 
+    if not context:
+        logging.critical("Unable to create daemon context. Exiting")
+        return(-1)
+    elif not context.pidfile:
+        logging.critical("Unable to create daemon context. Exiting")
+        return(-1)
+
     if options.stop:
         logging.info("Caught stop signal")
+        logging.info("Checking pid " + str(context.pidfile))
         logging.info("Context started: " + str(context.is_open))
         if context.is_open:
             context.close()
@@ -469,6 +481,22 @@ def initiate_daemon(options, env, log_file_path, logging):
     return context
 
 
+def child_process_loop(env, site, options):
+    """ Main process loop for each child """
+    while(RUNNING):
+        # in child process
+        download_list = update_list_from_feed(site.feed_url,
+                site.regexp_keys)
+        if len(download_list):
+            logging.debug("Start downloading, I found " +
+                    str(len(download_list)) + " items.")
+            process_download_list(env.cache_file_path,
+                    env.download_dir, download_list, options)
+        time.sleep(site.time_interval)
+    logging.debug("Exiting child process")
+    exit(0)
+
+
 def main_loop(env, sites, options):
     """ Main program loop """
     global RUNNING
@@ -478,30 +506,23 @@ def main_loop(env, sites, options):
     # Main loop
     for site in sites:
         num_children += 1
-        child = os.fork()
-        if child:
+        # Fork for each site
+        logging.debug("Forking process")
+        child_pid = os.fork()
+        if child_pid:
             # still in the parent process
+            logging.debug("Created fork with pid " + str(child_pid))
             logging.debug("Create child process for: " + site.feed_url)
-            ctmp = Child(num_children)
-            ctmp.pid = child
+            # Save child information to be able to check on it later
+            ctmp = Child(num_children, child_pid)
             children.append(ctmp)
         else:
-            while(RUNNING):
-                # in child process
-                download_list = update_list_from_feed(site.feed_url,
-                        site.regexp_keys)
-                if len(download_list):
-                    logging.debug("Start downloading, I found " +
-                            str(len(download_list)) + " items.")
-                    process_download_list(env.cache_file_path,
-                            env.download_dir, download_list, options)
-                time.sleep(site.time_interval)
-            exit(0)
+            child_process_loop(env, site, options)
 
     while(RUNNING):
         logging.debug("Looking into children...")
         for child in children:
-            (pid, status) = os.waitpid(child.pid, os.WNOHANG)
+            pid = os.waitpid(child.pid, os.WNOHANG)[1]
             if pid < 0:
                 child.is_alive = False
                 break
@@ -509,20 +530,13 @@ def main_loop(env, sites, options):
     # Kill children and exit
     for child in children:
         terminate_process(child.pid)
+    logging.info("Exiting")
     exit(0)
 
 
 def terminate_process(pid):
-    # all this shit is because we are stuck with Python 2.5
-    # and we cannot use Popen.terminate()
-    if sys.platform == 'win32':
-        import ctypes
-        PROCESS_TERMINATE = 1
-        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
-        ctypes.windll.kernel32.TerminateProcess(handle, -1)
-        ctypes.windll.kernel32.CloseHandle(handle)
-    else:
-        os.kill(pid, signal.SIGKILL)
+    """ Terminate process with pid """
+    os.kill(pid, signal.SIGKILL)
 
 
 try:
