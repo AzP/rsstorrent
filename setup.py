@@ -24,6 +24,7 @@ with open('README.md') as readme:
             'Operating System :: OS Independent',
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 3',
         ],
         py_modules = ['rsstorrent'],
         keywords='automation, p2p, network',
