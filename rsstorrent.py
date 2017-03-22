@@ -1,29 +1,28 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 """RssTorrent.py: Monitors an RSS-feed and automatically
     downloads torrents to a specified folder."""
 
 __author__ = "Peter Asplund"
-__copyright__ = "Copyleft 2012"
+__copyright__ = "Copyleft 2017"
 __credits__ = ["ikkemaniac"]
 __license__ = "GPL"
-__version__ = "0.6"
+__version__ = "0.7"
 __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
 __status__ = "Stable"
 
 import os
-import daemon
+#import daemon
 import signal
-import lockfile
+#import lockfile
 import feedparser
-import urllib
-import urllib2
-import cookielib
+import urllib.request, urllib.parse, urllib.error
+import http.cookiejar
 import time
 import re
 import logging
-import ConfigParser
+import configparser
 from optparse import OptionParser
 
 RUNNING = True
@@ -144,7 +143,7 @@ def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
     logging.info("Reading configuration file: " + cfg_file)
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.SafeConfigParser()
     config.read(cfg_file)
     sections = config.sections()
     for section in sections:
@@ -176,28 +175,30 @@ def read_config_file(cfg_file, sites, env):
 
 def site_login(site):
     """ Log in to url and save cookie """
-    cookie_jar = cookielib.CookieJar()
+    cookie_jar = http.cookiejar.CookieJar()
 
     # build opener with HTTPCookieProcessor
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie_jar))
+    opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(cookie_jar))
     opener.addheaders.append(('User-agent',
         ('Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1)'
         'Gecko/20110524 Firefox/4.0.1')))
-    urllib2.install_opener(opener)
+    urllib.request.install_opener(opener)
 
     # assuming the site expects 'user' and 'pass' as query params
-    login_query = urllib.urlencode({'username': site.username,
-        'password': site.password, 'login': 'Log in!'})
+    login_query = urllib.parse.urlencode({
+        'username': site.username,
+        'password': site.password,
+        'login':    'Log in!'}).encode()
 
     # perform login with params
     try:
-        file_handle = opener.open(site.login_url,
-                            login_query)
+        file_handle = opener.open(site.login_url, login_query)
         file_handle.close()
-    except urllib2.HTTPError, exception:
+    except urllib.error.HTTPError as exception:
         logging.error("HTTP Error: " + exception.code +
                 " Site:" + site.feed_url)
-    except urllib2.URLError, exception:
+    except urllib.error.URLError as exception:
         logging.error("URL Error: " + exception.reason +
                 " Site:" + site.feed_url)
 
@@ -260,8 +261,8 @@ def process_download_list(cache, download_dir, input_list, options):
 
             logging.info("Start downloading: " + filename)
             try:
-                request = urllib2.urlopen(http_url)
-            except urllib2.HTTPError, exception:
+                request = urllib.request.urlopen(http_url)
+            except urllib.error.HTTPError as exception:
                 msg = "HTTP Error: " + exception.code + " Line:" + http_url
                 logging.info(msg)
 
@@ -432,7 +433,7 @@ def initiate_daemon(options, env, log_file_path):
     # Set up some Daemon stuff
     context = daemon.DaemonContext(
             umask=0o002,
-            pidfile=lockfile.FileLock(options.pid_file),
+            pidfile=options.pid_file,
             )
     context.signal_map = {
             signal.SIGTERM: cleanup_program,
