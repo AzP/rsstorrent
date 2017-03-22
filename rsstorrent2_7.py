@@ -364,9 +364,9 @@ def parse_cmd_arguments():
             help="Don't actually download the files", default=False)
     (options, args) = parser.parse_args()
 
-    if args:
-        print("Required variables not supplied.")
-        exit(-1)
+    #if args:
+        #print("Required variables not supplied.")
+        #exit(-1)
 
     return options
 
@@ -416,6 +416,7 @@ def do_main_program():
     if options.daemon:
         context = initiate_daemon(options, env, log_file_path)
         logging.debug("Entering daemon context")
+        logging.debug(context)
         with context:
             logging.debug("Entered daemon context")
             main_loop(env, sites, options)
@@ -432,20 +433,14 @@ def initiate_daemon(options, env, log_file_path):
     # Set up some Daemon stuff
     context = daemon.DaemonContext(
             umask=0o002,
-            pidfile=lockfile.FileLock(options.pid_file),
+            pidfile_path=options.pid_file,
+            pidfile_timeout=5
             )
     context.signal_map = {
             signal.SIGTERM: cleanup_program,
             signal.SIGUSR1: cleanup_program,
             signal.SIGHUP: cleanup_program
             }
-
-    if not context:
-        logging.critical("Unable to create daemon context. Exiting")
-        return(-1)
-    elif not context.pidfile:
-        logging.critical("Unable to create daemon context. Exiting")
-        return(-1)
 
     if options.stop:
         logging.info("Caught stop signal")
@@ -460,7 +455,7 @@ def initiate_daemon(options, env, log_file_path):
     # Check if the daemon is already running
     # or at least if it has left a pid file behind
     try:
-        open(options.pid_file + '.lock', 'r')
+        open(options.pid_file, 'r')
         logging.info("pid-file exists, exiting")
         exit(-1)
     except IOError:
@@ -522,7 +517,7 @@ def main_loop(env, sites, options):
     while(RUNNING):
         logging.debug("Looking into children...")
         for child in children:
-            pid = os.waitpid(child.pid, os.WNOHANG)[1]
+            pid = os.waitpid(child.pid, os.WNOHANG)[0]
             if pid < 0:
                 child.is_alive = False
                 break
