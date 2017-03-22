@@ -74,7 +74,7 @@ start() {
 
         ### Create the lock file ###
         start-stop-daemon --background --start --user ${RSSTORRENT_USER} --name ${NAME} \
-			--make-pidfile --pidfile ${PIDFILE} --exec $DAEMON -- --logfile ${LOGFILE}
+			--make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} -- --logfile ${LOGFILE} -d
         eend $?
 }
 
