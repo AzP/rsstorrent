@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#! /usr/bin/python3.4
 
 """RssTorrent.py: Monitors an RSS-feed and automatically
     downloads torrents to a specified folder."""
@@ -12,18 +12,22 @@ __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
 __status__ = "Stable"
 
+#Standard includes
 import os
-#import daemon
 import signal
-#import lockfile
-import feedparser
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import http.cookiejar
 import time
 import re
 import logging
 import configparser
-from optparse import OptionParser
+import argparse
+#Extra packages
+import feedparser
+import daemon
+#import lockfile
 
 RUNNING = True
 
@@ -72,7 +76,7 @@ class Environment:
         self.cache_file_path = os.path.join(self.config_dir_path +
                                             self.cache_file)
         self.config_file_path = os.path.join(self.config_dir_path +
-                                            self.config_file)
+                                             self.config_file)
         self.download_dir = os.path.join(self.home_dir + "/Download")
         if not os.path.exists(self.config_dir_path):
             os.mkdir(self.config_dir_path, 0o755)
@@ -116,25 +120,25 @@ def create_config_file(cfg_file):
     with open(cfg_file, 'w+') as cfg_file_handle:
         # Split the file by lines to get rid of whitespace
         lines = ["[General]\n",
-            "# Directory which to download torrents to\n",
-            "download_dir = /home/username/Downloads/\n",
-            "\n",
-            "[Site1]\n",
-            "# Interval between checks in minutes\n",
-            "interval = 30\n",
-            "\n",
-            "# URL to rss feed\n",
-            "rss_url = http://www.urltosite.com\n",
-            "\n",
-            "# URL to site login page/script\n",
-            "login_url = http://www.urltosite.com/takelogin.php\n",
-            "\n",
-            "# Search keys for the parsing\n",
-            "keys = keys*to*search*for separated*by spaces\n",
-            "\n",
-            "# Username and Password to torrent site\n",
-            "username = username\n",
-            "password = password\n"]
+                 "# Directory which to download torrents to\n",
+                 "download_dir = /home/username/Downloads/\n",
+                 "\n",
+                 "[Site1]\n",
+                 "# Interval between checks in minutes\n",
+                 "interval = 30\n",
+                 "\n",
+                 "# URL to rss feed\n",
+                 "rss_url = http://www.urltosite.com\n",
+                 "\n",
+                 "# URL to site login page/script\n",
+                 "login_url = http://www.urltosite.com/takelogin.php\n",
+                 "\n",
+                 "# Search keys for the parsing\n",
+                 "keys = keys*to*search*for separated*by spaces\n",
+                 "\n",
+                 "# Username and Password to torrent site\n",
+                 "username = username\n",
+                 "password = password\n"]
         for line in lines:
             cfg_file_handle.writelines(line)
 
@@ -179,10 +183,10 @@ def site_login(site):
 
     # build opener with HTTPCookieProcessor
     opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(cookie_jar))
+        urllib.request.HTTPCookieProcessor(cookie_jar))
     opener.addheaders.append(('User-agent',
-        ('Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1)'
-        'Gecko/20110524 Firefox/4.0.1')))
+                              ('Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1)'
+                               'Gecko/20110524 Firefox/4.0.1')))
     urllib.request.install_opener(opener)
 
     # assuming the site expects 'user' and 'pass' as query params
@@ -197,10 +201,10 @@ def site_login(site):
         file_handle.close()
     except urllib.error.HTTPError as exception:
         logging.error("HTTP Error: " + exception.code +
-                " Site:" + site.feed_url)
+                      " Site:" + site.feed_url)
     except urllib.error.URLError as exception:
         logging.error("URL Error: " + exception.reason +
-                " Site:" + site.feed_url)
+                      " Site:" + site.feed_url)
 
 
 def update_list_from_feed(url, regexp_keys):
@@ -236,7 +240,7 @@ def process_download_list(cache, download_dir, input_list, options):
             return
         else:
             logging.debug(
-            "No cache file was found, but caching was ignored anyway"
+                "No cache file was found, but caching was ignored anyway"
             )
 
     # Open cache file and start downloading
@@ -304,13 +308,13 @@ def setup_logging(env, options):
     # logging before the console logging
     if options.debug:
         logging.basicConfig(filename=log_file, format=formatting,
-                level=logging.DEBUG)
+                            level=logging.DEBUG)
     elif options.verbose:
         logging.basicConfig(filename=log_file, format=formatting,
-                level=logging.INFO)
+                            level=logging.INFO)
     else:
         logging.basicConfig(filename=log_file, format=formatting,
-                level=logging.CRITICAL)
+                            level=logging.CRITICAL)
 
     # Always print messages to the console
     # In normal operating mode only CRITICAL messages will be displayed
@@ -339,30 +343,30 @@ def cleanup_program():
 def parse_cmd_arguments():
     """ Parse command line arguments """
     # Parse command line commands
-    parser = OptionParser()
-    parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
-            help="Verbose logging", default=False)
-    parser.add_option("-d", "--debug", action="store_true", dest="debug",
-            help="Print debug information to console", default=False)
-    parser.add_option("-D", "--daemon", action="store_true", dest="daemon",
-            help="Run as daemon", default=False)
-    parser.add_option("-x", "--stop", action="store_true", dest="stop",
-            help="Stop running daemon (does not work currently)",
-            default=False)
-    parser.add_option("-l", "--logfile", dest="log_file",
-            help="Write log to FILE", metavar="FILE")
-    parser.add_option("-p", "--pidfile", dest="pid_file",
-            help="Set pidfile to FILE", metavar="FILE",
-            default='/var/run/rsstorrent/rsstorrent.pid')
-    parser.add_option("--cc", "--cache-clear", action="store_true",
-            dest="cache_clear", help="Clear the cache file", default=False)
-    parser.add_option("--ci", "--cache-ignore", action="store_true",
-            dest="cache_ignore",
-            help="Ignore the cache and download all files again",
-            default=False)
-    parser.add_option("--nd", "--no-downloads", action="store_true",
-            dest="no_downloads",
-            help="Don't actually download the files", default=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
+                        help="Verbose logging", default=False)
+    parser.add_argument("-d", "--debug", action="store_true", dest="debug",
+                        help="Print debug information to console", default=False)
+    parser.add_argument("-D", "--daemon", action="store_true", dest="daemon",
+                        help="Run as daemon", default=False)
+    parser.add_argument("-x", "--stop", action="store_true", dest="stop",
+                        help="Stop running daemon (does not work currently)",
+                        default=False)
+    parser.add_argument("-l", "--logfile", dest="log_file",
+                        help="Write log to FILE", metavar="FILE")
+    parser.add_argument("-p", "--pidfile", dest="pid_file",
+                        help="Set pidfile to FILE", metavar="FILE",
+                        default='/var/run/rsstorrent/rsstorrent.pid')
+    parser.add_argument("--cc", "--cache-clear", action="store_true",
+                        dest="cache_clear", help="Clear the cache file", default=False)
+    parser.add_argument("--ci", "--cache-ignore", action="store_true",
+                        dest="cache_ignore",
+                        help="Ignore the cache and download all files again",
+                        default=False)
+    parser.add_argument("--nd", "--no-downloads", action="store_true",
+                        dest="no_downloads",
+                        help="Don't actually download the files", default=False)
     (options, args) = parser.parse_args()
 
     if args:
@@ -396,7 +400,7 @@ def do_main_program():
         create_config_file(env.config_dir_path + env.config_file)
         logging.warning("There was no config file found, I just created one.")
         logging.critical("Please check " + env.config_dir_path +
-                env.config_file + " before restarting!")
+                         env.config_file + " before restarting!")
         exit(-1)
 
     sites = []
@@ -432,21 +436,21 @@ def initiate_daemon(options, env, log_file_path):
     logging.debug("Setting up daemon with pid file: " + str(options.pid_file))
     # Set up some Daemon stuff
     context = daemon.DaemonContext(
-            umask=0o002,
-            pidfile=options.pid_file,
-            )
+        umask=0o002,
+        pidfile=options.pid_file,
+        )
     context.signal_map = {
-            signal.SIGTERM: cleanup_program,
-            signal.SIGUSR1: cleanup_program,
-            signal.SIGHUP: cleanup_program
-            }
+        signal.SIGTERM: cleanup_program,
+        signal.SIGUSR1: cleanup_program,
+        signal.SIGHUP: cleanup_program
+        }
 
     if not context:
         logging.critical("Unable to create daemon context. Exiting")
-        return(-1)
+        return -1
     elif not context.pidfile:
         logging.critical("Unable to create daemon context. Exiting")
-        return(-1)
+        return -1
 
     if options.stop:
         logging.info("Caught stop signal")
@@ -473,10 +477,10 @@ def initiate_daemon(options, env, log_file_path):
     if log_file_path:
         log_file_handle = logging.root.handlers[0].stream.fileno()
         logging.debug("Adding logging handle to files_preserve: "
-                + log_file_path)
+                      + log_file_path)
         context.files_preserve = [cache_file_handle,
-                config_file_handle,
-                log_file_handle]
+                                  config_file_handle,
+                                  log_file_handle]
     else:
         context.files_preserve = [cache_file_handle, config_file_handle]
     return context
@@ -484,15 +488,14 @@ def initiate_daemon(options, env, log_file_path):
 
 def child_process_loop(env, site, options):
     """ Main process loop for each child """
-    while(RUNNING):
+    while RUNNING:
         # in child process
-        download_list = update_list_from_feed(site.feed_url,
-                site.regexp_keys)
+        download_list = update_list_from_feed(site.feed_url, site.regexp_keys)
         if len(download_list):
             logging.debug("Start downloading, I found " +
-                    str(len(download_list)) + " items.")
+                          str(len(download_list)) + " items.")
             process_download_list(env.cache_file_path,
-                    env.download_dir, download_list, options)
+                                  env.download_dir, download_list, options)
         time.sleep(site.time_interval)
     logging.debug("Exiting child process")
     exit(0)
@@ -520,7 +523,7 @@ def main_loop(env, sites, options):
         else:
             child_process_loop(env, site, options)
 
-    while(RUNNING):
+    while RUNNING:
         logging.debug("Looking into children...")
         for child in children:
             pid = os.waitpid(child.pid, os.WNOHANG)[1]
