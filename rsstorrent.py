@@ -1,4 +1,4 @@
-#! /usr/bin/python3.4
+#! /usr/bin/python3
 
 """RssTorrent.py: Monitors an RSS-feed and automatically
     downloads torrents to a specified folder."""
@@ -7,7 +7,7 @@ __author__ = "Peter Asplund"
 __copyright__ = "Copyleft 2017"
 __credits__ = ["ikkemaniac"]
 __license__ = "GPL"
-__version__ = "0.7"
+__version__ = "0.8"
 __maintainer__ = "Peter Asplund"
 __email__ = "peterasplund@gentoo.se"
 __status__ = "Stable"
@@ -367,11 +367,7 @@ def parse_cmd_arguments():
     parser.add_argument("--nd", "--no-downloads", action="store_true",
                         dest="no_downloads",
                         help="Don't actually download the files", default=False)
-    (options, args) = parser.parse_args()
-
-    if args:
-        print("Required variables not supplied.")
-        exit(-1)
+    options = parser.parse_args()
 
     return options
 
