@@ -23,7 +23,6 @@ It utilizes various packages to work. Dependencies:
 
 
 # Description
-Not too hard really. Basically:
 
 1. Download the files and unpack into a directory.
 2. Change the rsstorrent.py to be runnable (`chmod +x rsstorrent.py` or right-click it, choose properties and fix it there).
