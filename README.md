@@ -1,7 +1,10 @@
 # Rsstorrent
+
 RssTorrent.py: A small tool that monitors an RSS-feed and automatically downloads torrents to a specified folder.
 
 It daemonizes after start and polls specified URLs at a specified interval. Init files are included for Gentoo (rc-init) and Debian/Ubuntu (not systemd).
+
+## Dependencies
 
 It utilizes various packages to work. Dependencies:
 
@@ -22,7 +25,7 @@ It utilizes various packages to work. Dependencies:
     daemon
 
 
-# Description
+## Instructions for use
 
 1. Download the files and unpack into a directory.
 2. Change the rsstorrent.py to be runnable (`chmod +x rsstorrent.py` or right-click it, choose properties and fix it there).
