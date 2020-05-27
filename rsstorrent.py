@@ -348,6 +348,8 @@ def parse_cmd_arguments():
                         help="Verbose logging", default=False)
     parser.add_argument("-d", "--debug", action="store_true", dest="debug",
                         help="Print debug information to console", default=False)
+    parser.add_argument("-1", "--run-once", action="store_true", dest="run_once",
+                        help="Run once, then exit", default=False)
     parser.add_argument("-D", "--daemon", action="store_true", dest="daemon",
                         help="Run as daemon", default=False)
     parser.add_argument("-x", "--stop", action="store_true", dest="stop",
@@ -518,6 +520,9 @@ def main_loop(env, sites, options):
             children.append(ctmp)
         else:
             child_process_loop(env, site, options)
+
+    if options.run_once:
+        RUNNING = False
 
     while RUNNING:
         logging.debug("Looking into children...")
