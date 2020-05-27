@@ -23,7 +23,6 @@ with open("README.md") as readme:
             "License :: OSI Approved :: GPL-3 License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 2",
             "Programming Language :: Python :: 3",
         ],
         py_modules=["rsstorrent"],
