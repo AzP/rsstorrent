@@ -153,7 +153,7 @@ def read_config_file(cfg_file, sites, env):
     """ Open and parse the config file, save the words in a list. """
     # Open config file
     logging.info("Reading configuration file: " + cfg_file)
-    config = configparser.SafeConfigParser()
+    config = configparser.ConfigParser()
     config.read(cfg_file)
     sections = config.sections()
     for section in sections:
