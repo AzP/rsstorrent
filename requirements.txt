@@ -1,0 +1,2 @@
+feedparser==5.2.1
+python_daemon==2.2.4
