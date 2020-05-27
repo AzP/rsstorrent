@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyleft Peter Asplund 2012 
+# Copyleft Peter Asplund 2012
 # Distributed under the terms of the GNU General Public License v2
 ### BEGIN INIT INFO
 # Provides:          rsstorrent
@@ -178,4 +178,3 @@ case "$1" in
 	exit 3
 	;;
 esac
-
