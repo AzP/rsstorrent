@@ -1,4 +1,4 @@
-#!/sbin/runscript
+#!/sbin/openrc-run
 # Copyleft Peter Asplund 2012
 # Distributed under the terms of the GNU General Public License v2
 # description: rsstorrent
