@@ -14,7 +14,7 @@ with open("README.md") as readme:
         long_description=readme.read(),
         license="GPL-3",
         author="Peter Asplund",
-        author_email="peterasplund@gentoo.se",
+        author_email="azpegath@pm.me",
         url="https://github.com/AzP/rsstorrent",
         classifiers=[
             "Development Status :: 5 - Production/Stable",
